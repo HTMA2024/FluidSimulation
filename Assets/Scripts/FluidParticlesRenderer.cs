@@ -1,16 +1,16 @@
-using System;
-using System.Collections.Generic;
 using UnityEngine;
 using System.Runtime.InteropServices;
 using Unity.Collections;
-using UnityEngine.Profiling;
-using UnityEngine.Rendering;
 using static FluidSimulation.FluidUtilities;
-using Random = UnityEngine.Random;
-using static FluidSimulation.FluidParticleSystem;
+using static FluidSimulation.FluidParticlePhysics;
 
 namespace FluidSimulation
 {
+    public struct FluidParticleGraphics
+    {
+        public Vector3 position;
+        public Vector3 color;
+    }
     public abstract class FluidParticlesRenderer 
     {
         private static Mesh _mesh;
@@ -24,6 +24,7 @@ namespace FluidSimulation
         private static Bounds _bounds;
         private static float _radius;
 
+        internal NativeArray<FluidParticleGraphics> fluidParticleGraphicsNative;
 
         internal static ComputeBuffer computeBuffer => _computeBuffer;
         internal static int GetFluidParticleCount() => fluidParticleCount;
@@ -31,31 +32,21 @@ namespace FluidSimulation
         internal static void Initialize(Shader circlesShader)
         {
             _material = new Material(circlesShader);
-            _computeBuffer = new ComputeBuffer(MAX_FLUIDPOINT_COUNT, Marshal.SizeOf(typeof(FluidParticle)), ComputeBufferType.Default, ComputeBufferMode.SubUpdates);
+            _computeBuffer = new ComputeBuffer(MAX_FLUIDPOINT_COUNT, Marshal.SizeOf(typeof(FluidParticleGraphics)), ComputeBufferType.Default, ComputeBufferMode.SubUpdates);
             _argsBuffer = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
+            
+            _material.SetBuffer("_ComputeBuffer", _computeBuffer);
             
             _mesh = CreateQuad(1,1);
             args[0] = (uint)_mesh.GetIndexCount(0);
             args[1] = (uint)GetFluidParticleCount();
             args[2] = (uint)_mesh.GetIndexStart(0);
             args[3] = (uint)_mesh.GetBaseVertex(0);
+            
             _argsBuffer.SetData(args);
             _bounds = new Bounds(Vector3.zero, new Vector3(100.0f, 100.0f, 100.0f));
         }
 
-
-        internal static void UpdateBuffers(bool isSubUpdate)
-        {
-            if (!isSubUpdate)
-            {
-                _computeBuffer.SetData(fluidParticlesNtvArray);
-            }
-            
-            args[1] = (uint)fluidParticleCount;;
-            _argsBuffer.SetData(args);
-            
-            _material.SetBuffer("_ComputeBuffer", _computeBuffer);
-        }
 
         internal static void SetRadius(float radius)
         {
@@ -65,6 +56,9 @@ namespace FluidSimulation
         internal static void ExecuteRender()
         {
             if (fluidParticleCount == 0) return;
+            args[1] = (uint)fluidParticleCount;;
+            _argsBuffer.SetData(args);
+            
             _material.SetPass(0);
             _material.SetFloat("_CircleRadius", _radius);
             Graphics.DrawMeshInstancedIndirect(_mesh, 0, _material, _bounds, _argsBuffer);
