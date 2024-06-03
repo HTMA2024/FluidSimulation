@@ -1,6 +1,7 @@
 using System;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace FluidSimulation
 {
@@ -8,13 +9,23 @@ namespace FluidSimulation
     {
         [SerializeField] private Shader m_DrawParticlesShader;
         [SerializeField] private float m_Radius = 0.5f;
+        [SerializeField] private bool m_EnableUpdate = false;
         
         private Camera m_Camera;
         private int m_FluidParticleCount = 0;
 
         private FluidParticlesRenderer m_ParticlesRenderer;
 
-        
+        private void OnEnable()
+        {
+            RenderPipelineManager.beginFrameRendering += OnBeginFrameRendering;
+        }
+
+        private void OnDisable()
+        {
+            RenderPipelineManager.beginFrameRendering -= OnBeginFrameRendering;
+        }
+
         private void Awake()
         {
             if (m_DrawParticlesShader == null) return;
@@ -26,6 +37,10 @@ namespace FluidSimulation
 
         private void Update()
         {
+            if (m_EnableUpdate)
+            {
+                FluidParticleSystem.UpdateFluidParticlesSub(FluidParticlesRenderer.computeBuffer, Time.deltaTime);
+            }
         }
 
 
@@ -40,7 +55,7 @@ namespace FluidSimulation
             m_FluidParticleCount = FluidParticlesRenderer.GetFluidParticleCount();
         }
         
-        void OnRenderObject()
+        void OnBeginFrameRendering(ScriptableRenderContext context, Camera[] cameras)
         {
             FluidParticlesRenderer.ExecuteRender();
         }
@@ -146,7 +161,7 @@ namespace FluidSimulation
                 GUILayout.BeginHorizontal();
                 if (GUILayout.Button("Update A Frame"))
                 {
-                    FluidParticleSystem.UpdateFluidParticlesSub(FluidParticlesRenderer.computeBuffer);
+                    FluidParticleSystem.UpdateFluidParticlesSub(FluidParticlesRenderer.computeBuffer, 1);
                 }
                 GUILayout.EndHorizontal();
                 

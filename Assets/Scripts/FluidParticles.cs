@@ -3,17 +3,44 @@ using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Profiling;
 using static FluidSimulation.FluidUtilities;
+using Random = UnityEngine.Random;
 
 namespace FluidSimulation
 {
     public struct FluidParticle
     {
         public Vector3 position;
+        public Vector3 acceleration;
         public Vector3 color;
 
-        public void Update()
+        public void Update(float deltatime)
         {
-            position += Vector3.one * 0.01f;
+            position += acceleration * deltatime;
+            if (position.x - 1 > 1e-5 || position.x + 1 < 1e-5 || position.y - 1 > 1e-5 || position.y + 1 < 1e-5 )
+            {
+                acceleration *= -1;
+            }
+
+            if (position.x - 1 > 1e-5)
+            {
+                position.x = 1;
+            }
+            
+            if (position.x + 1 < 1e-5)
+            {
+                position.x = -1;
+            }
+            
+            if (position.y - 1 > 1e-5)
+            {
+                position.y = 1;
+            }
+            
+            if (position.y + 1 < 1e-5)
+            {
+                position.y = -1;
+            }
+            
         }
     }
     
@@ -42,6 +69,7 @@ namespace FluidSimulation
             var fluidParticlesDataNtvArray = fluidParticlesNtvArray.GetSubArray(fluidParticleCount, 1);
             
             var fluidParticle = fluidParticleBufferArray[0];
+            fluidParticle.acceleration = Vector3.Normalize(new Vector3(Random.value, Random.value, 0));
             fluidParticle.position = position;
             fluidParticle.position.z = 1; // Make it 2D
             fluidParticle.color = (Vector4) color;
@@ -60,6 +88,7 @@ namespace FluidSimulation
             {
                 var fluidParticle = fluidParticleBufferArray[i];
                 fluidParticle.position = positions[i];
+                fluidParticle.acceleration = Vector3.Normalize(new Vector3(Random.value, Random.value, 0));
                 fluidParticle.color = Vector3.one;
                 fluidParticle.position.z = 1; // Make it 2D
                 fluidParticleBufferArray[i] = fluidParticle;
@@ -71,7 +100,7 @@ namespace FluidSimulation
             fluidParticleCount += count;
         }
         
-        public static void UpdateFluidParticlesSub(ComputeBuffer computeBuffer)
+        public static void UpdateFluidParticlesSub(ComputeBuffer computeBuffer, float deltatime)
         {
             // computeBuffer should be SubUpdate mode
             
@@ -80,7 +109,7 @@ namespace FluidSimulation
             for (int i = 0; i < fluidParticleCount; i++)
             {
                 var fluidParticle = fluidParticles[i];
-                fluidParticle.Update();
+                fluidParticle.Update(deltatime);
                 fluidParticles[i] = fluidParticle;
                 fluidParticlesDataNtvArray[i] = fluidParticle;
             }
@@ -95,6 +124,7 @@ namespace FluidSimulation
             for (int i = 0; i < fluidParticleCount; i++)
             {
                 var fluidParticle = fluidParticles[i];
+                fluidParticle.acceleration = Vector3.zero;
                 fluidParticle.position = Vector3.zero;
                 fluidParticle.position.z = 0; // Make it 2D
                 fluidParticle.color = Vector3.zero;
@@ -114,6 +144,7 @@ namespace FluidSimulation
                 return;
             }
             var fluidParticle = fluidParticlesNtvArray[fluidParticleCount];
+            fluidParticle.acceleration = Vector3.Normalize(new Vector3(Random.value, Random.value, 0));
             fluidParticle.position = position;
             fluidParticle.position.z = 1; // Make it 2D
             fluidParticle.color = (Vector4) color;
@@ -128,6 +159,7 @@ namespace FluidSimulation
             for (int i = 0; i < count; i++)
             {
                 var fluidParticle = fluidParticleArray[i];
+                fluidParticle.acceleration = Vector3.Normalize(new Vector3(Random.value, Random.value, 0));
                 fluidParticle.position = positions[i];
                 fluidParticle.color = Vector3.one;
                 fluidParticle.position.z = 1; // Make it 2D
@@ -138,12 +170,12 @@ namespace FluidSimulation
             fluidParticleCount += count;
         }
 
-        public static void UpdateFluidParticles()
+        public static void UpdateFluidParticles(float deltatime)
         {
             for (int i = 0; i < fluidParticleCount; i++)
             {
                 var fluidParticle = fluidParticlesNtvArray[i];
-                fluidParticle.Update();
+                fluidParticle.Update(deltatime);
                 fluidParticlesNtvArray[i] = fluidParticle;
             }
         }
@@ -153,6 +185,7 @@ namespace FluidSimulation
             for (int i = 0; i < fluidParticleCount; i++)
             {
                 var fluidParticle = fluidParticlesNtvArray[fluidParticleCount];
+                fluidParticle.acceleration = Vector3.zero;
                 fluidParticle.position = Vector3.zero;
                 fluidParticle.position.z = 0; // Make it 2D
                 fluidParticle.color = Vector3.zero;

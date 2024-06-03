@@ -30,6 +30,7 @@ Shader "Draw Circles"
             struct Circle
             {
                 float3 position;
+                float3 acceleration;
                 float3 color;
             };
  

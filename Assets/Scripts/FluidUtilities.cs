@@ -6,7 +6,7 @@ namespace FluidSimulation
 {
     public static class FluidUtilities
     {
-        public static int MAX_FLUIDPOINT_COUNT = 65535;
+        public static int MAX_FLUIDPOINT_COUNT = 6553500;
         public static Mesh CreateQuad(float width = 1f, float height = 1f) {
             // Create a quad mesh.
             var mesh = new Mesh();
