@@ -38,7 +38,11 @@ namespace FluidSimulation
         {
             if (m_EnableUpdate)
             {
-                FluidParticlePhysics.Update(FluidParticlesRenderer.computeBuffer, Time.deltaTime);
+                FluidParticlesRenderer.BeginWriteBuffer(0, FluidParticlePhysics.fluidParticleCount);
+                
+                FluidParticlePhysics.Update(Time.deltaTime);
+                
+                FluidParticlesRenderer.EndWriteBuffer(FluidParticlePhysics.fluidParticleCount);
             }
         }
 
@@ -102,7 +106,7 @@ namespace FluidSimulation
 
 #if UNITY_EDITOR
         [CustomEditor(typeof(FluidSimulator))]
-        private class RandomParticlesGeneratorEditor : Editor
+        private class FluidSimulatorEditor : Editor
         {
             private Vector2 m_ParticlePosition;
             private Color m_CircleColor = Color.white;
@@ -157,7 +161,7 @@ namespace FluidSimulation
                 GUILayout.BeginHorizontal();
                 if (GUILayout.Button("Update A Frame"))
                 {
-                    FluidParticlePhysics.Update(FluidParticlesRenderer.computeBuffer, 1);
+                    FluidParticlePhysics.Update(1);
                 }
                 GUILayout.EndHorizontal();
                 

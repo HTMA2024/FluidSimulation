@@ -24,10 +24,15 @@ namespace FluidSimulation
         private static Bounds _bounds;
         private static float _radius;
 
-        internal NativeArray<FluidParticleGraphics> fluidParticleGraphicsNative;
+        internal static NativeArray<FluidParticleGraphics> fluidParticleGraphicsNative;
 
         internal static ComputeBuffer computeBuffer => _computeBuffer;
         internal static int GetFluidParticleCount() => fluidParticleCount;
+        
+        internal static void SetRadius(float radius)
+        {
+            _radius = radius;
+        }
         
         internal static void Initialize(Shader circlesShader)
         {
@@ -47,11 +52,23 @@ namespace FluidSimulation
             _bounds = new Bounds(Vector3.zero, new Vector3(100.0f, 100.0f, 100.0f));
         }
 
-
-        internal static void SetRadius(float radius)
+        internal static void BeginWriteBuffer(int startIndex, int count)
         {
-            _radius = radius;
+            fluidParticleGraphicsNative = _computeBuffer.BeginWrite<FluidParticleGraphics>(startIndex, count);
         }
+        internal static void EndWriteBuffer(int count)
+        {
+            _computeBuffer.EndWrite<FluidParticleGraphics>(count);
+        }
+
+        internal static void UpdateParticle(FluidParticle fluidParticle, int index)
+        {
+            var fluidParticleGraphics = fluidParticleGraphicsNative[index];
+            fluidParticleGraphics.position = fluidParticle.position;
+            fluidParticleGraphics.color = Vector3.one;
+            fluidParticleGraphicsNative[index] = fluidParticleGraphics;
+        }
+
 
         internal static void ExecuteRender()
         {
