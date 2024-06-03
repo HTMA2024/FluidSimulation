@@ -30,16 +30,15 @@ namespace FluidSimulation
         {
             if (m_DrawParticlesShader == null) return;
             m_Camera = this.GetComponent<Camera>();
-            FluidParticleSystem.Init();
+            FluidParticlePhysics.Init();
             FluidParticlesRenderer.Initialize(m_DrawParticlesShader);
-            FluidParticlesRenderer.UpdateBuffers(false);
         }
 
         private void Update()
         {
             if (m_EnableUpdate)
             {
-                FluidParticleSystem.UpdateFluidParticlesSub(FluidParticlesRenderer.computeBuffer, Time.deltaTime);
+                FluidParticlePhysics.Update(FluidParticlesRenderer.computeBuffer, Time.deltaTime);
             }
         }
 
@@ -62,14 +61,12 @@ namespace FluidSimulation
 
         void AddParticle(Vector3 position, Color color)
         {
-            FluidParticleSystem.AddFluidParticleSub(FluidParticlesRenderer.computeBuffer ,position, color);
-            FluidParticlesRenderer.UpdateBuffers(true);
+            FluidParticlePhysics.Add(FluidParticlesRenderer.computeBuffer ,position, color);
         }
 
         void CleanParticles()
         {
-            FluidParticleSystem.CleanSub(FluidParticlesRenderer.computeBuffer);
-            FluidParticlesRenderer.UpdateBuffers(true);
+            FluidParticlePhysics.Clean(FluidParticlesRenderer.computeBuffer);
         }
 
         private void FillScreen(int density)
@@ -93,13 +90,12 @@ namespace FluidSimulation
             
             // FluidParticleSystem.AddFluidParticles(positions, count);
             // FluidParticlesRenderer.UpdateBuffers();
-            FluidParticleSystem.AddFluidParticlesSub(FluidParticlesRenderer.computeBuffer, positions, count);
-            FluidParticlesRenderer.UpdateBuffers(true);
+            FluidParticlePhysics.AddMultiple(FluidParticlesRenderer.computeBuffer, positions, count);
         }
 
         private void OnDestroy()
         {
-            FluidParticleSystem.Dispose();
+            FluidParticlePhysics.Dispose();
             FluidParticlesRenderer.Dispose();
         }
 
@@ -161,7 +157,7 @@ namespace FluidSimulation
                 GUILayout.BeginHorizontal();
                 if (GUILayout.Button("Update A Frame"))
                 {
-                    FluidParticleSystem.UpdateFluidParticlesSub(FluidParticlesRenderer.computeBuffer, 1);
+                    FluidParticlePhysics.Update(FluidParticlesRenderer.computeBuffer, 1);
                 }
                 GUILayout.EndHorizontal();
                 

@@ -27,14 +27,13 @@ Shader "Draw Circles"
             };
             
             
-            struct Circle
+            struct Particles
             {
                 float3 position;
-                float3 acceleration;
                 float3 color;
             };
  
-            StructuredBuffer<Circle> _ComputeBuffer;
+            StructuredBuffer<Particles> _ComputeBuffer;
             float _CircleRadius;
  
             float Mod(float x, float y)
