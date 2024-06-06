@@ -12,22 +12,23 @@ namespace FluidSimulation
         public int index;
         public Vector3 position;
         public Vector3 velocity;
-        public Vector3 accelration;
+        public Vector3 acceleration;
         public Vector3 color;
 
         public static Action<FluidParticle, int> onUpdate;
+        private const float energyDumping = 0.98f;
 
         public void Update(float deltatime)
         {
-            velocity += accelration;
+            velocity += acceleration * deltatime;
             position += velocity * deltatime;
             if (position.x - 1 > 1e-5 || position.x + 1 < 1e-5)
             {
-                velocity.x *= -1;
+                velocity.x *= -1 * energyDumping;
             }
             if ( position.y - 1 > 1e-5 || position.y + 1 < 1e-5 )
             {
-                velocity.y *= -1;
+                velocity.y *= -1 * energyDumping;
             }
 
             if (position.x - 1 > 1e-5)
@@ -81,6 +82,7 @@ namespace FluidSimulation
             var fluidParticlesDataNtvArray = fluidParticlesNtvArray.GetSubArray(fluidParticleCount, 1);
             
             var fluidParticle = fluidParticlesDataNtvArray[0];
+            fluidParticle.acceleration = Vector3.up ;
             fluidParticle.velocity = Vector3.Normalize(new Vector3(Random.value, Random.value, 0));
             fluidParticle.position = position;
             fluidParticle.position.z = 1; // Make it 2D
@@ -104,6 +106,7 @@ namespace FluidSimulation
             for (int i = 0; i < count; i++)
             {
                 var fluidParticle = fluidParticlesDataNtvArray[i];
+                fluidParticle.acceleration = Vector3.up;
                 fluidParticle.position = positions[i];
                 fluidParticle.velocity = Vector3.Normalize(new Vector3(Random.value, Random.value, 0));
                 fluidParticle.color = Vector3.one;
@@ -132,6 +135,30 @@ namespace FluidSimulation
                 fluidParticlesDataNtvArray[i] = fluidParticle;
                 
             }
+        }
+
+        internal static void FillScreen(float pwidth,float pheight,float density)
+        {
+            var width =  (int) (pwidth / (float)density);
+            var height = (int) (pheight / (float)density);
+            var count = (int)(width + 1) * (int)(height + 1);
+
+            var positions = new Vector3[count];
+            
+            for (int i = 0; i <= width; i++)
+            {
+                for (int j = 0; j <= height; j++)
+                {
+                    Vector3 position = new Vector3((float)i/width, (float)j/height);
+                    position = position * 2 - Vector3.one;
+                    var index = (int)(i * (height + 1) + j);
+                    positions[index] = position;
+                }
+            }
+            
+            // FluidParticleSystem.AddFluidParticles(positions, count);
+            // FluidParticlesRenderer.UpdateBuffers();
+            FluidParticlePhysics.AddMultiple(FluidParticlesRenderer.computeBuffer, positions, count);
         }
         
         public static void Clean(ComputeBuffer computeBuffer)

@@ -8,22 +8,31 @@ namespace FluidSimulation
     public class FluidSimulator : MonoBehaviour
     {
         [SerializeField] private Shader m_DrawParticlesShader;
-        [SerializeField] private float m_Radius = 0.5f;
+        [SerializeField] private Shader m_DrawDensityShader;
+        [SerializeField][Range(0,1)] private float m_ParticleRadius = 0.5f;
+        [SerializeField][Range(0,1)] private float m_DensityRadius = 0.5f;
         [SerializeField] private bool m_EnableUpdate = false;
-        
+
+        [SerializeField] private Color m_DensityColor = Color.white;
+        [SerializeField] private RenderTexture m_RenderTexture;
+            
         private Camera m_Camera;
         private int m_FluidParticleCount = 0;
 
         private FluidParticlesRenderer m_ParticlesRenderer;
 
+        private CommandBuffer m_FluidParticleCB;
+        public CameraEvent cameraEvent = CameraEvent.AfterLighting;
+        private int m_DrawParticlesRTID = -1;
+
         private void OnEnable()
         {
-            RenderPipelineManager.beginFrameRendering += OnBeginFrameRendering;
+            RenderPipelineManager.beginCameraRendering += OnBeginFrameRendering;
         }
 
         private void OnDisable()
         {
-            RenderPipelineManager.beginFrameRendering -= OnBeginFrameRendering;
+            RenderPipelineManager.beginCameraRendering -= OnBeginFrameRendering;
         }
 
         private void Awake()
@@ -31,7 +40,8 @@ namespace FluidSimulation
             if (m_DrawParticlesShader == null) return;
             m_Camera = this.GetComponent<Camera>();
             FluidParticlePhysics.Init();
-            FluidParticlesRenderer.Initialize(m_DrawParticlesShader);
+            FluidParticlesRenderer.SetCamera(m_Camera);
+            FluidParticlesRenderer.Initialize(m_DrawParticlesShader, m_DrawDensityShader);
         }
 
         private void Update()
@@ -49,17 +59,21 @@ namespace FluidSimulation
 
         private void OnValidate()
         {
-            FluidParticlesRenderer.SetRadius(m_Radius);
+            FluidParticlesRenderer.SetParticleRadius(m_ParticleRadius);
+            FluidParticlesRenderer.SetDensityRadius(m_DensityRadius);
+            FluidParticlesRenderer.SetDensityColor(m_DensityColor);
         }
 
 
         private void UpdateInfo()
         {
             m_FluidParticleCount = FluidParticlesRenderer.GetFluidParticleCount();
+            m_RenderTexture = FluidParticlesRenderer.GetRenderTexture();
         }
         
-        void OnBeginFrameRendering(ScriptableRenderContext context, Camera[] cameras)
+        void OnBeginFrameRendering(ScriptableRenderContext context, Camera camera)
         {
+            if (camera != m_Camera) return;
             FluidParticlesRenderer.ExecuteRender();
         }
 
@@ -75,26 +89,7 @@ namespace FluidSimulation
 
         private void FillScreen(int density)
         {
-            var width =  (int) (m_Camera.pixelWidth / (float)density);
-            var height = (int) (m_Camera.pixelHeight / (float)density);
-            var count = (int)(width + 1) * (int)(height + 1);
-
-            var positions = new Vector3[count];
-            
-            for (int i = 0; i <= width; i++)
-            {
-                for (int j = 0; j <= height; j++)
-                {
-                    Vector3 position = new Vector3((float)i/width, (float)j/height);
-                    position = position * 2 - Vector3.one;
-                    var index = (int)(i * (height + 1) + j);
-                    positions[index] = position;
-                }
-            }
-            
-            // FluidParticleSystem.AddFluidParticles(positions, count);
-            // FluidParticlesRenderer.UpdateBuffers();
-            FluidParticlePhysics.AddMultiple(FluidParticlesRenderer.computeBuffer, positions, count);
+            FluidParticlePhysics.FillScreen(m_Camera.pixelWidth,m_Camera.pixelHeight,density);
         }
 
         private void OnDestroy()
@@ -168,7 +163,8 @@ namespace FluidSimulation
                 EditorGUILayout.EndVertical();
                 
                 EditorGUILayout.BeginVertical(new GUIStyle("Box"));
-                EditorGUILayout.LabelField($"FluidPointRadius: {t.m_Radius}");
+                EditorGUILayout.LabelField($"Fluid Point Radius: {t.m_ParticleRadius}");
+                EditorGUILayout.LabelField($"Fluid Point Radius: {t.m_DensityRadius}");
                 EditorGUILayout.LabelField($"FluidPointCount: {t.m_FluidParticleCount}");
                 EditorGUILayout.EndVertical();
 
