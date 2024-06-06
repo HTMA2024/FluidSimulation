@@ -1,6 +1,8 @@
 using UnityEngine;
 using System.Runtime.InteropServices;
 using Unity.Collections;
+using UnityEngine.Experimental.Rendering;
+using UnityEngine.Rendering;
 using static FluidSimulation.FluidUtilities;
 using static FluidSimulation.FluidParticlePhysics;
 
@@ -20,27 +22,66 @@ namespace FluidSimulation
         private static ComputeBuffer _argsBuffer;
         private static uint[] args = new uint[5] { 0, 0, 0, 0, 0 };
 
-        private static Material _material;
+        private static Material _particleMaterial;
+        private static Material _densityMaterial;
         private static Bounds _bounds;
-        private static float _radius;
+        private static float _pRadius;
+        private static float _dRadius;
+        private static Color _dColor;
+        private static Camera _Camera;
+        private static RenderTexture _rt;
 
         internal static NativeArray<FluidParticleGraphics> fluidParticleGraphicsNative;
 
         internal static ComputeBuffer computeBuffer => _computeBuffer;
         internal static int GetFluidParticleCount() => fluidParticleCount;
         
-        internal static void SetRadius(float radius)
+        internal static void SetParticleRadius(float radius)
         {
-            _radius = radius;
+            _pRadius = radius;
         }
-        
-        internal static void Initialize(Shader circlesShader)
+        internal static void SetDensityRadius(float radius)
         {
-            _material = new Material(circlesShader);
+            _dRadius = radius;
+        }
+
+        internal static void SetCamera(Camera camera)
+        {
+            _Camera = camera;
+        }
+
+        internal static RenderTexture GetRenderTexture()
+        {
+            return _rt;
+        }
+
+        internal static void SetDensityColor(Color color)
+        {
+            _dColor = color;
+        }        
+        internal static void Initialize(Shader particleShader, Shader densityMaterial)
+        {
+            RenderTextureDescriptor renderTextureDescriptor = new RenderTextureDescriptor();
+            renderTextureDescriptor.width = _Camera.pixelWidth;
+            renderTextureDescriptor.height = _Camera.pixelHeight;
+            renderTextureDescriptor.dimension = TextureDimension.Tex2D;
+            renderTextureDescriptor.volumeDepth = 1;
+            renderTextureDescriptor.useMipMap = false;
+            renderTextureDescriptor.graphicsFormat = GraphicsFormat.R16_SFloat;
+            renderTextureDescriptor.bindMS = false;
+            renderTextureDescriptor.msaaSamples = 1;
+            renderTextureDescriptor.depthStencilFormat = GraphicsFormat.None;
+            renderTextureDescriptor.useDynamicScale = false;
+        
+            _rt = RenderTexture.GetTemporary(renderTextureDescriptor);
+            
+            _particleMaterial = new Material(particleShader);
+            _densityMaterial = new Material(densityMaterial);
             _computeBuffer = new ComputeBuffer(MAX_FLUIDPOINT_COUNT, Marshal.SizeOf(typeof(FluidParticleGraphics)), ComputeBufferType.Default, ComputeBufferMode.SubUpdates);
             _argsBuffer = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
             
-            _material.SetBuffer("_ComputeBuffer", _computeBuffer);
+            _particleMaterial.SetBuffer("_ComputeBuffer", _computeBuffer);
+            _densityMaterial.SetBuffer("_ComputeBuffer", _computeBuffer);
             
             _mesh = CreateQuad(1,1);
             args[0] = (uint)_mesh.GetIndexCount(0);
@@ -76,15 +117,22 @@ namespace FluidSimulation
             args[1] = (uint)fluidParticleCount;;
             _argsBuffer.SetData(args);
             
-            _material.SetPass(0);
-            _material.SetFloat("_CircleRadius", _radius);
-            Graphics.DrawMeshInstancedIndirect(_mesh, 0, _material, _bounds, _argsBuffer);
+            _particleMaterial.SetPass(0);
+            _densityMaterial.SetPass(0);
+            _particleMaterial.SetFloat("_ParticleRadius", _pRadius);
+            _densityMaterial.SetFloat("_DensityRadius", _dRadius);
+            _densityMaterial.SetColor("_Color", _dColor);
+
+            Graphics.SetRenderTarget(_rt);
+            GL.Clear(false, true, Color.black);
+            Graphics.DrawMeshInstancedIndirect(_mesh, 0, _particleMaterial, _bounds, _argsBuffer);
+            Graphics.DrawMeshInstancedIndirect(_mesh, 0, _densityMaterial, _bounds, _argsBuffer);
         }
 
 
         public static void Dispose()
         {
-            _material = null;
+            _particleMaterial = null;
             _computeBuffer?.Release();
             _argsBuffer?.Dispose();
         }
