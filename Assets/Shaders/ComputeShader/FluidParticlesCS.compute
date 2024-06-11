@@ -1,0 +1,18 @@
+#pragma kernel FluidSimulationCS
+#include "FluidParticle.hlsl"
+
+#define tx 64
+
+uint _FluidParticleCount;
+RWStructuredBuffer<FluidParticleCS> _FluidParticleCS;
+
+[numthreads(tx,1,1)]
+void FluidSimulationCS (uint3 id : SV_DispatchThreadID)
+{
+	const uint idx = id.x;
+	if(idx > _FluidParticleCount) return;
+	
+	_FluidParticleCS[idx].position = 0;
+	_FluidParticleCS[idx].velocity = 0;
+	_FluidParticleCS[idx].acceleration = 0;
+}

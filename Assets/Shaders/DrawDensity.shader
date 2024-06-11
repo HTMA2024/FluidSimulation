@@ -25,7 +25,7 @@ Shader "Draw Density"
             
             struct v2f {
                 float4 vertex   : SV_POSITION;
-                fixed4 color    : COLOR;
+                // fixed4 color    : COLOR;
                 float2 uv : TEXCOORD0;
             };
             
@@ -33,7 +33,7 @@ Shader "Draw Density"
             struct Particles
             {
                 float3 position;
-                float3 color;
+                // float3 color;
             };
 
             float4 _Color;
@@ -53,7 +53,7 @@ Shader "Draw Density"
                 pos.z = 1;
                 o.vertex = UnityObjectToClipPos(pos);
                 o.vertex.xy += _ComputeBuffer[instanceID].position.xy;
-                o.color = float4(_ComputeBuffer[instanceID].color,1);
+                // o.color = float4(_ComputeBuffer[instanceID].color,1);
                 o.uv = i.uv;
 
                 return o;
