@@ -10,6 +10,7 @@ namespace FluidSimulation
     {
         [SerializeField] private Shader m_DrawParticlesShader;
         [SerializeField] private Shader m_DrawDensityShader;
+        [SerializeField] private Shader m_DrawGradientShader;
         [SerializeField] private ComputeShader m_ComputeShader;
         
         [SerializeField][Range(0,1)] private float m_ParticleRadius = 0.5f;

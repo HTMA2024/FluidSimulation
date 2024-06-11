@@ -16,6 +16,7 @@ Shader "Draw Density"
             #pragma vertex vert
             #pragma fragment frag
             #pragma target 5.0
+            #include "UnityCG.cginc"
             #include "Assets/Shaders/ComputeShader/FluidParticle.hlsl"
  
             struct appdata_t {
@@ -33,6 +34,7 @@ Shader "Draw Density"
             float4 _Color;
             StructuredBuffer<FluidParticlePhysics> _ComputeBuffer;
             float _DensityRadius;
+
  
             float Mod(float x, float y)
             {
@@ -58,8 +60,9 @@ Shader "Draw Density"
                 
                 float2 s = i.uv * 2.0 - 1.0;
                 float dis = abs(distance(s,0));
-                fixed4 res = 1 - dis;
-                // clip(res);
+                // fixed4 res = max(0, 1 - dis);
+                fixed4 res = SmoothingKernel(1, dis);
+
                 return res * _Color;
             }
  
