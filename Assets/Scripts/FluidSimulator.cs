@@ -8,6 +8,9 @@ namespace FluidSimulation
 {
     public class FluidSimulator : MonoBehaviour
     {
+        [SerializeField] private Shader m_DrawParticlesShader;
+        [SerializeField] private Shader m_DrawDensityShader;
+        
         [SerializeField][Range(0,1)] private float m_ParticleRadius = 0.5f;
         [SerializeField][Range(0,1)] private float m_DensityRadius = 0.5f;
         [SerializeField] private bool m_EnableUpdate = false;
@@ -18,8 +21,6 @@ namespace FluidSimulation
         private Camera m_Camera;
         private int m_FluidParticleCount = 0;
 
-        private CommandBuffer m_FluidParticleCB;
-        public CameraEvent cameraEvent = CameraEvent.AfterLighting;
         private int m_DrawParticlesRTID = -1;
 
 
@@ -27,17 +28,15 @@ namespace FluidSimulation
         {
             m_Camera = this.GetComponent<Camera>();
             FluidParticlePhysics.Init();
+            FluidDensityFieldRendererFeature.Init(m_DrawParticlesShader, m_DrawDensityShader);
         }
 
         private void Update()
         {
             if (m_EnableUpdate)
             {
-                FluidDensityFieldRendererFeature.BeginWriteBuffer(0, fluidParticleCount);
                 
                 FluidParticlePhysics.Update(Time.deltaTime);
-                
-                FluidDensityFieldRendererFeature.EndWriteBuffer(fluidParticleCount);
             }
         }
 
@@ -52,24 +51,18 @@ namespace FluidSimulation
 
         private void UpdateInfo()
         {
-            m_FluidParticleCount = fluidParticleCount;
+            m_FluidParticleCount = FluidParticleCount;
             m_RenderTexture = FluidDensityFieldRendererFeature.GetRenderTexture();
-        }
-        
-        void OnBeginFrameRendering(ScriptableRenderContext context, Camera camera)
-        {
-            if (camera != m_Camera) return;
-            // FluidDensityFieldRendererFeature.ExecuteRender();
         }
 
         void AddParticle(Vector3 position, Color color)
         {
-            FluidParticlePhysics.Add(FluidDensityFieldRendererFeature.computeBuffer ,position, color);
+            FluidParticlePhysics.Add(position, color);
         }
 
         void CleanParticles()
         {
-            FluidParticlePhysics.Clean(FluidDensityFieldRendererFeature.computeBuffer);
+            FluidParticlePhysics.Clean();
         }
 
         private void FillScreen(int density)

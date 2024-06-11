@@ -65,7 +65,7 @@ Shader "Draw Density"
                 float2 s = i.uv * 2.0 - 1.0;
                 float dis = abs(distance(s,0));
                 fixed4 res = 1 - dis;
-                clip(res);
+                // clip(res);
                 return res * _Color;
             }
  
