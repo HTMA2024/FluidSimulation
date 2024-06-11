@@ -16,6 +16,7 @@ Shader "Draw Density"
             #pragma vertex vert
             #pragma fragment frag
             #pragma target 5.0
+            #include "Assets/Shaders/ComputeShader/FluidParticle.hlsl"
  
             struct appdata_t {
                 float4 vertex   : POSITION;
@@ -28,16 +29,9 @@ Shader "Draw Density"
                 // fixed4 color    : COLOR;
                 float2 uv : TEXCOORD0;
             };
-            
-            
-            struct Particles
-            {
-                float3 position;
-                // float3 color;
-            };
 
             float4 _Color;
-            StructuredBuffer<Particles> _ComputeBuffer;
+            StructuredBuffer<FluidParticlePhysics> _ComputeBuffer;
             float _DensityRadius;
  
             float Mod(float x, float y)

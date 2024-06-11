@@ -10,11 +10,19 @@ namespace FluidSimulation
 
         public static void SetParticleCount(int count)
         {
+            FluidDensityFieldRendererFeature.UpdateParticleCount(FluidParticleCount, count);
             FluidParticleCount = count;
-            FluidDensityFieldRendererFeature.UpdateParticleCount();
         }
     }
     
+    public struct FluidParticlePhysics
+    {
+        public int index;
+        public Vector3 position;
+        public Vector3 velocity;
+        public Vector3 acceleration;
+    }
+
     public struct FluidParticleGraphics
     {
         public Vector3 position;

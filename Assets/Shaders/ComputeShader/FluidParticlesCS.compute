@@ -1,18 +1,70 @@
 #pragma kernel FluidSimulationCS
+#pragma kernel InitCS
+
 #include "FluidParticle.hlsl"
 
 #define tx 64
 
-uint _FluidParticleCount;
-RWStructuredBuffer<FluidParticleCS> _FluidParticleCS;
+uint _PrevFluidParticleCount;
+uint _CurrFluidParticleCount;
+float _Deltatime;
+StructuredBuffer<FluidParticlePhysics> _FluidParticleInit;
+RWStructuredBuffer<FluidParticleGraphics> _FluidParticleGraphics;
+RWStructuredBuffer<FluidParticlePhysics> _FluidParticlePhysics;
 
 [numthreads(tx,1,1)]
 void FluidSimulationCS (uint3 id : SV_DispatchThreadID)
 {
 	const uint idx = id.x;
-	if(idx > _FluidParticleCount) return;
+	float energyDumping = 0.9f;
+	if(idx > _CurrFluidParticleCount) return;
+
+	float3 position = _FluidParticlePhysics[idx].position + _FluidParticlePhysics[idx].velocity * _Deltatime;
+	float3 velocity = _FluidParticlePhysics[idx].velocity + _FluidParticlePhysics[idx].acceleration * _Deltatime;
 	
-	_FluidParticleCS[idx].position = 0;
-	_FluidParticleCS[idx].velocity = 0;
-	_FluidParticleCS[idx].acceleration = 0;
+	if (position.x - 1 > 1e-5 || position.x + 1 < 1e-5)
+	{
+	    velocity.x *= -1 * energyDumping;
+	}
+	if ( position.y - 1 > 1e-5 || position.y + 1 < 1e-5 )
+	{
+	    velocity.y *= -1 * energyDumping;
+	}
+	
+	if (position.x - 1 > 1e-5)
+	{
+	    position.x = 1;
+	}
+	
+	if (position.x + 1 < 1e-5)
+	{
+	    position.x = -1;
+	}
+	
+	if (position.y - 1 > 1e-5)
+	{
+	    position.y = 1;
+	}
+	
+	if (position.y + 1 < 1e-5)
+	{
+	    position.y = -1;
+	}
+
+	_FluidParticlePhysics[idx].position = position;
+	_FluidParticlePhysics[idx].velocity = velocity;
+}
+
+
+[numthreads(tx,1,1)]
+void InitCS (uint3 id : SV_DispatchThreadID)
+{
+	const uint idx = id.x;
+	if(idx > _CurrFluidParticleCount) return;
+	if(idx < _PrevFluidParticleCount) return;
+	
+	_FluidParticlePhysics[idx].index = _FluidParticleInit[idx].index;
+	_FluidParticlePhysics[idx].position = _FluidParticleInit[idx].position;
+	_FluidParticlePhysics[idx].velocity = _FluidParticleInit[idx].velocity;
+	_FluidParticlePhysics[idx].acceleration = _FluidParticleInit[idx].acceleration;
 }
