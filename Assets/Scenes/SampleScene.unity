@@ -460,9 +460,10 @@ MonoBehaviour:
     type: 3}
   m_DrawDensityShader: {fileID: 4800000, guid: 4c38c55807af36e4581cd8049b6cecaf, type: 3}
   m_ComputeShader: {fileID: 7200000, guid: 3ee609e653ae2a44ab767f8ddce950b2, type: 3}
-  m_ParticleRadius: 0.005
-  m_DensityRadius: 0.005
+  m_ParticleRadius: 0.01
+  m_DensityRadius: 0.05
   m_EnableUpdate: 0
+  m_DrawDensityField: 0
   m_DensityColor: {r: 1, g: 1, b: 1, a: 1}
   m_RenderTexture: {fileID: 0}
 --- !u!1660057539 &9223372036854775807

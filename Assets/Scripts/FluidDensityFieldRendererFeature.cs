@@ -29,6 +29,7 @@ namespace FluidSimulation
         private static Mesh _mesh;
 
         private static RenderTexture _rt;
+        private static RTHandle m_RTHandle;
 
         private static ComputeShader _computeShader;
         private static ComputeBuffer _particlesInitBuffer;
@@ -38,11 +39,14 @@ namespace FluidSimulation
 
         private static int _computeKernel;
         private static int _initKernel;
+        private static int _cameraKernel;
 
         private static readonly uint[] _args = new uint[5] { 0, 0, 0, 0, 0 };
         
         private DensityFieldPass m_DensityFieldPass;
 
+        internal static bool enableUpdate = false;
+        internal static bool drawDensityField = false;
         private static bool _isWriting = false;
         private static bool _isInit = false;
 
@@ -57,12 +61,15 @@ namespace FluidSimulation
 
             _argsBuffer = new ComputeBuffer(1, _args.Length * sizeof(uint), ComputeBufferType.IndirectArguments,ComputeBufferMode.SubUpdates);
 
-            _initKernel = _computeShader.FindKernel("InitCS");
             _computeKernel = _computeShader.FindKernel("FluidSimulationCS");
             _computeShader.SetInt("_FluidParticleCount", FluidParticleCount);
             _computeShader.SetBuffer(_computeKernel,"_FluidParticleInit", _particlesInitBuffer);
             _computeShader.SetBuffer(_computeKernel,"_FluidParticlePhysics", _particlesPhysicsBuffer);
             _computeShader.SetBuffer(_computeKernel,"_FluidParticleGraphics", _particlesGraphicsBuffer);
+            
+            _initKernel = _computeShader.FindKernel("InitCS");
+            _computeShader.SetBuffer(_initKernel,"_FluidParticleInit", _particlesInitBuffer);
+            _computeShader.SetBuffer(_initKernel,"_FluidParticlePhysics", _particlesPhysicsBuffer);
             
             _particleMaterial.SetBuffer("_ComputeBuffer", _particlesPhysicsBuffer);
             _densityMaterial.SetBuffer("_ComputeBuffer", _particlesPhysicsBuffer);
@@ -123,9 +130,9 @@ namespace FluidSimulation
             _computeShader.SetInt("_CurrFluidParticleCount", currCount);
 
             if (currCount == 0) return;
+            int threadGroupX = Mathf.CeilToInt(currCount / 64.0f);
             _computeShader.SetBuffer(_initKernel,"_FluidParticleInit", _particlesInitBuffer);
             _computeShader.SetBuffer(_initKernel,"_FluidParticlePhysics", _particlesPhysicsBuffer);
-            int threadGroupX = Mathf.CeilToInt(currCount / 64.0f);
             _computeShader.Dispatch(_initKernel, threadGroupX,1,1);
         }
 
@@ -141,9 +148,9 @@ namespace FluidSimulation
         {
             _dRadius = radius;
         }
-        internal static RenderTexture GetRenderTexture()
+        internal static RTHandle GetRenderTexture()
         {
-            return _rt;
+            return m_RTHandle;
         }
         internal static void SetDensityColor(Color color)
         {
@@ -157,6 +164,20 @@ namespace FluidSimulation
         
         class DensityFieldPass : ScriptableRenderPass
         {
+            private RTHandle m_CameraColorTarget;
+            public void SetTarget(RTHandle colorHandle)
+            {
+                m_CameraColorTarget = colorHandle;
+            }
+
+            public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
+            {
+                if (m_CameraColorTarget != null)
+                {
+                    ConfigureTarget(m_CameraColorTarget);
+                }
+            }
+            
             public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
             {
                 CommandBuffer cmd = CommandBufferPool.Get(name: "DensityFieldPass");
@@ -169,76 +190,120 @@ namespace FluidSimulation
     
                 var deltaTime = Time.deltaTime;
                 _computeShader.SetFloat("_Deltatime", deltaTime);
-                cmd.DispatchCompute(_computeShader,_computeKernel, Mathf.CeilToInt(FluidParticleCount / 64.0f),1,1 );
                 
+                // Compute Physics
+                if (enableUpdate)
+                {
+                    cmd.DispatchCompute(_computeShader,_computeKernel, Mathf.CeilToInt(FluidParticleCount / 64.0f),1,1 );
+                }
+                
+                // Draw
                 cmd.SetRenderTarget(BuiltinRenderTextureType.CurrentActive, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
                 cmd.ClearRenderTarget(true, true, Color.black);
                 cmd.DrawMeshInstancedIndirect(_mesh, 0, _particleMaterial, 0, _argsBuffer);
                 cmd.DrawMeshInstancedIndirect(_mesh, 0, _densityMaterial, 0, _argsBuffer);
                 
-                // cmd.SetRenderTarget(_rt, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
-                // cmd.ClearRenderTarget(true, true, Color.black);
-                // cmd.DrawMeshInstancedIndirect(_mesh, 0, _densityMaterial, 0, _argsBuffer);
-                
+                cmd.SetRenderTarget(m_RTHandle, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
+                cmd.ClearRenderTarget(true, true, Color.black);
+                cmd.DrawMeshInstancedIndirect(_mesh, 0, _densityMaterial, 0, _argsBuffer);
+                if (drawDensityField)
+                {
+                    Blitter.BlitCameraTexture(cmd, m_RTHandle, m_CameraColorTarget, 0);
+                }
+
                 context.ExecuteCommandBuffer(cmd);
                 CommandBufferPool.Release(cmd);
 
                 
             }
-            
+
+            public void Dispose()
+            {
+                m_RTHandle?.Release();
+            }
         }
 
-        private void CreateRT(int pixelWidth, int pixelHeight)
+        private void SetRTHandle(ref RenderingData renderingData)
         {
+            // if (m_RTHandle != null) return;
+            if (renderingData.cameraData.cameraType != CameraType.Game) return;
             RenderTextureDescriptor renderTextureDescriptor = new RenderTextureDescriptor();
-            renderTextureDescriptor.width = pixelWidth;
-            renderTextureDescriptor.height = pixelHeight;
+            renderTextureDescriptor.width =  renderingData.cameraData.camera.pixelWidth;
+            renderTextureDescriptor.height = renderingData.cameraData.camera.pixelHeight;
             renderTextureDescriptor.dimension = TextureDimension.Tex2D;
             renderTextureDescriptor.volumeDepth = 1;
             renderTextureDescriptor.useMipMap = false;
-            renderTextureDescriptor.graphicsFormat = GraphicsFormat.R32G32B32A32_SFloat;
-            renderTextureDescriptor.bindMS = false;
+            renderTextureDescriptor.colorFormat = RenderTextureFormat.Default;
             renderTextureDescriptor.msaaSamples = 1;
-            renderTextureDescriptor.depthStencilFormat = GraphicsFormat.None;
-            renderTextureDescriptor.useDynamicScale = false;
-     
-            _rt = RenderTexture.GetTemporary(renderTextureDescriptor);
-        }
+            renderTextureDescriptor.enableRandomWrite = true;
 
-        private void ResizeRT(ref RenderingData renderingData)
-        {
-            if (renderingData.cameraData.cameraType == CameraType.Game)
+            Vector2Int screen = new Vector2Int(renderingData.cameraData.camera.pixelWidth, renderingData.cameraData.camera.pixelHeight);
+
+            // RTHandles.SetReferenceSize(renderingData.cameraData.camera.pixelWidth, renderingData.cameraData.camera.pixelHeight);
+            if (m_RTHandle != null)
             {
-                var pixelWidth = renderingData.cameraData.camera.pixelWidth;
-                var pixelHeight = renderingData.cameraData.camera.pixelHeight;
-                if (_rt != null)
-                {
-                    _rt.Release();
-                }
-                else
-                {
-                    CreateRT(pixelWidth, pixelHeight);
-                }
-                if (pixelWidth != _rt.width || pixelHeight != _rt.height)
-                {
-                    CreateRT(pixelWidth, pixelHeight);
-                }
+                if (m_RTHandle.GetScaledSize() == screen) return;
+                m_RTHandle.Release();
+                m_RTHandle = RTHandles.Alloc(
+                    renderTextureDescriptor,
+                    FilterMode.Point,
+                    TextureWrapMode.Clamp,
+                    false,
+                    1,
+                    0,
+                    "CustomRenderTexture"
+                );
+            }
+            else
+            {
+
+                m_RTHandle = RTHandles.Alloc(
+                    renderTextureDescriptor,
+                    FilterMode.Point,
+                    TextureWrapMode.Clamp,
+                    false,
+                    1,
+                    0,
+                    "CustomRenderTexture"
+                );
             }
         }
         public override void Create()
         {
+            if (Application.isPlaying)
+            {
+                // RTHandles.Initialize(Screen.width, Screen.height);
+            }
             m_DensityFieldPass = new DensityFieldPass();
         }
         public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
         {
             if (_isInit && !_isWriting)
             {
-                ResizeRT(ref renderingData);
+                SetRTHandle(ref renderingData);
                 renderer.EnqueuePass(m_DensityFieldPass);
+            }
+        }
+
+        public override void SetupRenderPasses(ScriptableRenderer renderer,
+            in RenderingData renderingData)
+        {
+            if (renderingData.cameraData.cameraType == CameraType.Game)
+            {
+                // Calling ConfigureInput with the ScriptableRenderPassInput.Color argument
+                // ensures that the opaque texture is available to the Render Pass.
+                m_DensityFieldPass.ConfigureInput(ScriptableRenderPassInput.Color);
+                m_DensityFieldPass.SetTarget(renderer.cameraColorTargetHandle);
             }
         }
 
         #endregion
 
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            m_DensityFieldPass.Dispose();
+        }
     }
+    
 }

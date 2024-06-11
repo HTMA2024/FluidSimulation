@@ -15,13 +15,13 @@ namespace FluidSimulation
         [SerializeField][Range(0,1)] private float m_ParticleRadius = 0.5f;
         [SerializeField][Range(0,1)] private float m_DensityRadius = 0.5f;
         [SerializeField] private bool m_EnableUpdate = false;
+        [SerializeField] private bool m_DrawDensityField = false;
 
         [SerializeField] private Color m_DensityColor = Color.white;
-        [SerializeField] private RenderTexture m_RenderTexture;
+        [SerializeField] private RTHandle m_RenderTexture;
             
         private Camera m_Camera;
         private int m_FluidParticleCount = 0;
-
         private int m_DrawParticlesRTID = -1;
 
 
@@ -45,6 +45,8 @@ namespace FluidSimulation
             FluidDensityFieldRendererFeature.SetParticleRadius(m_ParticleRadius);
             FluidDensityFieldRendererFeature.SetDensityRadius(m_DensityRadius);
             FluidDensityFieldRendererFeature.SetDensityColor(m_DensityColor);
+            FluidDensityFieldRendererFeature.enableUpdate = m_EnableUpdate;
+            FluidDensityFieldRendererFeature.drawDensityField = m_DrawDensityField;
         }
 
 
