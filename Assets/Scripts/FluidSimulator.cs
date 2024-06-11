@@ -10,6 +10,7 @@ namespace FluidSimulation
     {
         [SerializeField] private Shader m_DrawParticlesShader;
         [SerializeField] private Shader m_DrawDensityShader;
+        [SerializeField] private ComputeShader m_ComputeShader;
         
         [SerializeField][Range(0,1)] private float m_ParticleRadius = 0.5f;
         [SerializeField][Range(0,1)] private float m_DensityRadius = 0.5f;
@@ -27,16 +28,15 @@ namespace FluidSimulation
         private void Awake()
         {
             m_Camera = this.GetComponent<Camera>();
-            FluidParticlePhysics.Init();
-            FluidDensityFieldRendererFeature.Init(m_DrawParticlesShader, m_DrawDensityShader);
+            FluidParticlePhysicsSystem.Init();
+            FluidDensityFieldRendererFeature.Init(m_DrawParticlesShader, m_DrawDensityShader,m_ComputeShader);
         }
 
         private void Update()
         {
             if (m_EnableUpdate)
             {
-                
-                FluidParticlePhysics.Update(Time.deltaTime);
+                // FluidParticlePhysicsSystem.Update(Time.deltaTime);
             }
         }
 
@@ -57,22 +57,22 @@ namespace FluidSimulation
 
         void AddParticle(Vector3 position, Color color)
         {
-            FluidParticlePhysics.Add(position, color);
+            FluidParticlePhysicsSystem.Add(position, color);
         }
 
         void CleanParticles()
         {
-            FluidParticlePhysics.Clean();
+            FluidParticlePhysicsSystem.Clean();
         }
 
         private void FillScreen(int density)
         {
-            FluidParticlePhysics.FillScreen(m_Camera.pixelWidth,m_Camera.pixelHeight,density);
+            FluidParticlePhysicsSystem.FillScreen(m_Camera.pixelWidth,m_Camera.pixelHeight,density);
         }
 
         private void OnDestroy()
         {
-            FluidParticlePhysics.Dispose();
+            FluidParticlePhysicsSystem.Dispose();
             // FluidDensityFieldRendererFeature.Dispose();
         }
 
@@ -134,7 +134,7 @@ namespace FluidSimulation
                 GUILayout.BeginHorizontal();
                 if (GUILayout.Button("Update A Frame"))
                 {
-                    FluidParticlePhysics.Update(1);
+                    // FluidParticlePhysicsSystem.Update(1);
                 }
                 GUILayout.EndHorizontal();
                 
