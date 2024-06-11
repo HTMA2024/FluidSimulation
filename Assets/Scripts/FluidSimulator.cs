@@ -36,7 +36,6 @@ namespace FluidSimulation
         {
             if (m_EnableUpdate)
             {
-                // FluidParticlePhysicsSystem.Update(Time.deltaTime);
             }
         }
 

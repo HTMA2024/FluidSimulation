@@ -31,14 +31,19 @@ namespace FluidSimulation
         private static RenderTexture _rt;
 
         private static ComputeShader _computeShader;
+        private static ComputeBuffer _particlesInitBuffer;
         private static ComputeBuffer _particlesGraphicsBuffer;
         private static ComputeBuffer _particlesPhysicsBuffer;
         private static ComputeBuffer _argsBuffer;
 
+        private static int _computeKernel;
+        private static int _initKernel;
+
         private static readonly uint[] _args = new uint[5] { 0, 0, 0, 0, 0 };
         
         private DensityFieldPass m_DensityFieldPass;
-        
+
+        private static bool _isWriting = false;
         private static bool _isInit = false;
 
         internal static void Init(Shader particleShader, Shader densityShader, ComputeShader computeShader)
@@ -46,17 +51,21 @@ namespace FluidSimulation
             _computeShader = computeShader;
             _particleMaterial = new Material(particleShader);
             _densityMaterial = new Material(densityShader);
-            _particlesGraphicsBuffer = new ComputeBuffer(MAX_FLUIDPOINT_COUNT, Marshal.SizeOf(typeof(FluidParticleGraphics)), ComputeBufferType.Default, ComputeBufferMode.SubUpdates);
-            _particlesPhysicsBuffer = new ComputeBuffer(MAX_FLUIDPOINT_COUNT, Marshal.SizeOf(typeof(FluidParticlePhysics)), ComputeBufferType.Default, ComputeBufferMode.SubUpdates);
+            _particlesInitBuffer = new ComputeBuffer(MAX_FLUIDPOINT_COUNT, Marshal.SizeOf(typeof(FluidParticlePhysics)), ComputeBufferType.Default, ComputeBufferMode.SubUpdates);
+            _particlesGraphicsBuffer = new ComputeBuffer(MAX_FLUIDPOINT_COUNT, Marshal.SizeOf(typeof(FluidParticleGraphics)), ComputeBufferType.Default);
+            _particlesPhysicsBuffer = new ComputeBuffer(MAX_FLUIDPOINT_COUNT, Marshal.SizeOf(typeof(FluidParticlePhysics)), ComputeBufferType.Default);
 
             _argsBuffer = new ComputeBuffer(1, _args.Length * sizeof(uint), ComputeBufferType.IndirectArguments,ComputeBufferMode.SubUpdates);
 
-            var kernel = computeShader.FindKernel("FluidSimulationCS");
-            computeShader.SetInt("_FluidParticleCount", FluidParticleCount);
-            computeShader.SetBuffer(kernel,"_FluidParticleCS", _particlesPhysicsBuffer);
+            _initKernel = _computeShader.FindKernel("InitCS");
+            _computeKernel = _computeShader.FindKernel("FluidSimulationCS");
+            _computeShader.SetInt("_FluidParticleCount", FluidParticleCount);
+            _computeShader.SetBuffer(_computeKernel,"_FluidParticleInit", _particlesInitBuffer);
+            _computeShader.SetBuffer(_computeKernel,"_FluidParticlePhysics", _particlesPhysicsBuffer);
+            _computeShader.SetBuffer(_computeKernel,"_FluidParticleGraphics", _particlesGraphicsBuffer);
             
-            _particleMaterial.SetBuffer("_ComputeBuffer", _particlesGraphicsBuffer);
-            _densityMaterial.SetBuffer("_ComputeBuffer", _particlesGraphicsBuffer);
+            _particleMaterial.SetBuffer("_ComputeBuffer", _particlesPhysicsBuffer);
+            _densityMaterial.SetBuffer("_ComputeBuffer", _particlesPhysicsBuffer);
 
             _mesh = CreateQuad(1, 1);
             _args[0] = (uint)_mesh.GetIndexCount(0);
@@ -72,6 +81,7 @@ namespace FluidSimulation
 
         internal static NativeArray<T> BeginWriteBuffer<T>(FluidComputeBufferType fluidComputeBufferType, int startIndex, int count) where T : struct
         {
+            _isWriting = true;
             NativeArray<T> result = default;
             switch(fluidComputeBufferType)
             {
@@ -79,14 +89,14 @@ namespace FluidSimulation
                     var particlesGraphicsNative = _particlesGraphicsBuffer.BeginWrite<FluidParticleGraphics>(startIndex, count);
                     return (NativeArray<T>)Convert.ChangeType(particlesGraphicsNative, typeof(NativeArray<T>));
                 case FluidComputeBufferType.Physics:
-                    var particlesPhysicsNative = _particlesPhysicsBuffer.BeginWrite<FluidParticlePhysics>(startIndex, count);
+                    var particlesPhysicsNative = _particlesInitBuffer.BeginWrite<FluidParticlePhysics>(startIndex, count);
                     return (NativeArray<T>)Convert.ChangeType(particlesPhysicsNative, typeof(NativeArray<T>));
-                    
             }
             return result;
         }
         internal static void EndWriteBuffer(FluidComputeBufferType fluidComputeBufferType, int count)
         {
+            _isWriting = false;
             switch(fluidComputeBufferType)
             {
                 case FluidComputeBufferType.Graphics:
@@ -94,22 +104,29 @@ namespace FluidSimulation
                     return;
 
                 case FluidComputeBufferType.Physics:
-                    _particlesPhysicsBuffer.EndWrite<FluidParticlePhysics>(count);
+                    _particlesInitBuffer.EndWrite<FluidParticlePhysics>(count);
                     return;
             }
         }
         
 
-        internal static void UpdateParticleCount()
+        internal static void UpdateParticleCount(int prevCount, int currCount)
         {
             // Update arg buffer
             if (_argsBuffer == null) return;
             var arg1 = _argsBuffer.BeginWrite<uint>(1, 1);
-            arg1[0] = (uint)FluidParticleCount;
+            arg1[0] = (uint)currCount;
             _argsBuffer.EndWrite<int>(1);
             
             // Update computeShader
-            _computeShader.SetInt("_FluidParticleCount", FluidParticleCount);
+            _computeShader.SetInt("_PrevFluidParticleCount", prevCount);
+            _computeShader.SetInt("_CurrFluidParticleCount", currCount);
+
+            if (currCount == 0) return;
+            _computeShader.SetBuffer(_initKernel,"_FluidParticleInit", _particlesInitBuffer);
+            _computeShader.SetBuffer(_initKernel,"_FluidParticlePhysics", _particlesPhysicsBuffer);
+            int threadGroupX = Mathf.CeilToInt(currCount / 64.0f);
+            _computeShader.Dispatch(_initKernel, threadGroupX,1,1);
         }
 
         #endregion
@@ -149,7 +166,11 @@ namespace FluidSimulation
                 _particleMaterial.SetFloat("_ParticleRadius", _pRadius);
                 _densityMaterial.SetFloat("_DensityRadius", _dRadius);
                 _densityMaterial.SetColor("_Color", _dColor);
-
+    
+                var deltaTime = Time.deltaTime;
+                _computeShader.SetFloat("_Deltatime", deltaTime);
+                cmd.DispatchCompute(_computeShader,_computeKernel, Mathf.CeilToInt(FluidParticleCount / 64.0f),1,1 );
+                
                 cmd.SetRenderTarget(BuiltinRenderTextureType.CurrentActive, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
                 cmd.ClearRenderTarget(true, true, Color.black);
                 cmd.DrawMeshInstancedIndirect(_mesh, 0, _particleMaterial, 0, _argsBuffer);
@@ -161,6 +182,8 @@ namespace FluidSimulation
                 
                 context.ExecuteCommandBuffer(cmd);
                 CommandBufferPool.Release(cmd);
+
+                
             }
             
         }
@@ -208,7 +231,7 @@ namespace FluidSimulation
         }
         public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
         {
-            if (_isInit)
+            if (_isInit && !_isWriting)
             {
                 ResizeRT(ref renderingData);
                 renderer.EnqueuePass(m_DensityFieldPass);

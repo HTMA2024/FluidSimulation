@@ -9,80 +9,18 @@ using Random = UnityEngine.Random;
 
 namespace FluidSimulation
 {
-    public struct FluidParticlePhysics
-    {
-        public int index;
-        public Vector3 position;
-        public Vector3 velocity;
-        public Vector3 acceleration;
-        // public Vector3 color;
-        //
-        // public static Action<FluidParticlePhysics, int> onUpdate;
-        // private const float energyDumping = 0.98f;
-        //
-        // public void Update(float deltatime, NativeArray<FluidParticleGraphics> graphicsNtvArray)
-        // {
-        //     velocity += acceleration * deltatime;
-        //     position += velocity * deltatime;
-        //     if (position.x - 1 > 1e-5 || position.x + 1 < 1e-5)
-        //     {
-        //         velocity.x *= -1 * energyDumping;
-        //     }
-        //     if ( position.y - 1 > 1e-5 || position.y + 1 < 1e-5 )
-        //     {
-        //         velocity.y *= -1 * energyDumping;
-        //     }
-        //
-        //     if (position.x - 1 > 1e-5)
-        //     {
-        //         position.x = 1;
-        //     }
-        //     
-        //     if (position.x + 1 < 1e-5)
-        //     {
-        //         position.x = -1;
-        //     }
-        //     
-        //     if (position.y - 1 > 1e-5)
-        //     {
-        //         position.y = 1;
-        //     }
-        //     
-        //     if (position.y + 1 < 1e-5)
-        //     {
-        //         position.y = -1;
-        //     }
-        //     
-        //     var fluidParticleGraphics = graphicsNtvArray[index];
-        //     fluidParticleGraphics.position = this.position;
-        //     fluidParticleGraphics.color = Vector3.one;
-        //     graphicsNtvArray[index] = fluidParticleGraphics;
-        // }
-    }
-    
     public static class FluidParticlePhysicsSystem 
     {
-        private static readonly FluidParticlePhysics[] FluidParticleArray = new FluidParticlePhysics[MAX_FLUIDPOINT_COUNT];
-        private static NativeArray<FluidParticlePhysics> _fluidParticlesNtvArray;
-
         internal static void Init()
         {
-            _fluidParticlesNtvArray = new NativeArray<FluidParticlePhysics>(FluidParticleArray, Allocator.Persistent);
             SetParticleCount(0);
-
-            for (int i = 0; i < _fluidParticlesNtvArray.Length; i++)
-            {
-                var fluidParticle= _fluidParticlesNtvArray[i];
-                fluidParticle.index = i;
-                _fluidParticlesNtvArray[i] = fluidParticle;
-            }
         }
 
         private static FluidParticlePhysics CreateParticle(Vector3 position)
         {
             var fluidParticle = new FluidParticlePhysics();
-            fluidParticle.acceleration = Vector3.up ;
-            fluidParticle.velocity = Vector3.Normalize(new Vector3(Random.value, Random.value, 0));
+            fluidParticle.acceleration = Vector3.Normalize(Vector3.one - 2.0f *new Vector3(Random.value, Random.value, 0));
+            fluidParticle.velocity = Vector3.Normalize(Vector3.one - 2.0f *new Vector3(Random.value, Random.value, 0));
             fluidParticle.position = position;
             fluidParticle.position.z = 1; // Make it 2D
             return fluidParticle;
@@ -101,62 +39,32 @@ namespace FluidSimulation
         
         internal static void Add(Vector3 position, Color color)
         {
-            var fluidParticlesGraphicsNative = BeginWriteBuffer<FluidParticleGraphics>(FluidComputeBufferType.Graphics,FluidParticleCount,1);
-            var fluidParticlesDataNtvArray = _fluidParticlesNtvArray.GetSubArray(FluidParticleCount, 1);
+            var fluidParticlesPhysicsNative = BeginWriteBuffer<FluidParticlePhysics>(FluidComputeBufferType.Physics,FluidParticleCount,1);
             
-            var fluidParticle = fluidParticlesDataNtvArray[0];
+            var fluidParticle = fluidParticlesPhysicsNative[0];
             var particle = CreateParticle(position);
             fluidParticle = particle;
-            fluidParticlesDataNtvArray[0] = fluidParticle;
+            fluidParticlesPhysicsNative[0] = fluidParticle;
             
-            var fluidParticleGraphics = fluidParticlesGraphicsNative[0];
-            fluidParticleGraphics.position = fluidParticle.position;
-            // fluidParticleGraphics.color = fluidParticle.color;
-            fluidParticlesGraphicsNative[0] = fluidParticleGraphics;
-            
-            EndWriteBuffer(FluidComputeBufferType.Graphics,1);
+            EndWriteBuffer(FluidComputeBufferType.Physics,1);
             SetParticleCount(FluidParticleCount + 1);
         }
         
         internal static void AddMultiple(Vector3[] positions, int count)
         {
-            Profiler.BeginSample("[ParticleRenderer] <AddFluidParticlesSub>");
             
-            var fluidParticlesGraphicsNative = BeginWriteBuffer<FluidParticleGraphics>(FluidComputeBufferType.Graphics, FluidParticleCount,count);
-            var fluidParticlesDataNtvArray = _fluidParticlesNtvArray.GetSubArray(FluidParticleCount, count);
+            var fluidParticlesPhysicsNative = BeginWriteBuffer<FluidParticlePhysics>(FluidComputeBufferType.Physics, FluidParticleCount,count);
             for (int i = 0; i < count; i++)
             {
-                var fluidParticle = fluidParticlesDataNtvArray[i];
+                var fluidParticle = fluidParticlesPhysicsNative[i];
                 var particle = CreateParticle(positions[i]);
                 fluidParticle = particle;
-                fluidParticlesDataNtvArray[i] = fluidParticle;
-                
-                var fluidParticleGraphics = fluidParticlesGraphicsNative[i];
-                fluidParticleGraphics.position = fluidParticle.position;
-                // fluidParticleGraphics.color = fluidParticle.color;
-                fluidParticlesGraphicsNative[i] = fluidParticleGraphics;
+                fluidParticlesPhysicsNative[i] = fluidParticle;
             }
-            EndWriteBuffer(FluidComputeBufferType.Graphics,count);
-            Profiler.EndSample();
-            
+            EndWriteBuffer(FluidComputeBufferType.Physics,count);
             SetParticleCount(FluidParticleCount + count);
         }
         
-        // public static void Update(float deltatime)
-        // {
-        //     // computeBuffer should be SubUpdate mode
-        //     var fluidParticlesGraphicsNative = FluidDensityFieldRendererFeature.BeginWriteBuffer(0,FluidParticleCount);
-        //     var fluidParticlesDataNtvArray = _fluidParticlesNtvArray.GetSubArray(0,FluidParticleCount);
-        //     for (int i = 0; i < FluidParticleCount; i++)
-        //     {
-        //         var fluidParticle = fluidParticlesDataNtvArray[i];
-        //         fluidParticle.Update(deltatime, fluidParticlesGraphicsNative);
-        //         fluidParticlesDataNtvArray[i] = fluidParticle;
-        //         
-        //     }
-        //     FluidDensityFieldRendererFeature.EndWriteBuffer(FluidParticleCount);
-        // }
-
         internal static void FillScreen(float pwidth,float pheight,float density)
         {
             var width =  (int) (pwidth / (float)density);
@@ -176,34 +84,25 @@ namespace FluidSimulation
                 }
             }
             
-            // FluidParticleSystem.AddFluidParticles(positions, count);
-            // FluidDensityFieldRendererFeature.UpdateBuffers();
             AddMultiple(positions, count);
         }
         
         public static void Clean()
         {
             if (FluidParticleCount == 0) return;
-            var fluidParticlesGraphicsNative = BeginWriteBuffer<FluidParticleGraphics>(FluidComputeBufferType.Graphics,0,FluidParticleCount);
-            var fluidParticlesDataNtvArray = _fluidParticlesNtvArray.GetSubArray(0,FluidParticleCount);
+            var fluidParticlesPhysicsNative = BeginWriteBuffer<FluidParticlePhysics>(FluidComputeBufferType.Physics,0,FluidParticleCount);
             for (int i = 0; i < FluidParticleCount; i++)
             {
-                var fluidParticle = fluidParticlesDataNtvArray[i];
+                var fluidParticle = fluidParticlesPhysicsNative[i];
                 fluidParticle = CleanParticle();
-                fluidParticlesDataNtvArray[i] = fluidParticle;
-                
-                var fluidParticleGraphics = fluidParticlesGraphicsNative[i];
-                fluidParticleGraphics.position = fluidParticle.position;
-                // fluidParticleGraphics.color = fluidParticle.color;
-                fluidParticlesGraphicsNative[i] = fluidParticleGraphics;
+                fluidParticlesPhysicsNative[i] = fluidParticle;
             }
-            EndWriteBuffer(FluidComputeBufferType.Graphics,FluidParticleCount);
+            EndWriteBuffer(FluidComputeBufferType.Physics,FluidParticleCount);
             SetParticleCount(0);
         }
         
         public static void Dispose()
         {
-            _fluidParticlesNtvArray.Dispose();
             SetParticleCount(0);
         }
     }
