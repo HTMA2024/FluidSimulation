@@ -6,12 +6,12 @@ namespace FluidSimulation
 {
     public static class Globals
     {
-        private static int _fluidParticleCount = 0;
-        public static int fluidParticleCount => _fluidParticleCount;
+        public static int FluidParticleCount { get; private set; } = 0;
 
         public static void SetParticleCount(int count)
         {
-            _fluidParticleCount = count;
+            FluidParticleCount = count;
+            FluidDensityFieldRendererFeature.UpdateArgsBuffer();
         }
     }
     
