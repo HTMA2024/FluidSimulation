@@ -4,6 +4,23 @@ using UnityEngine;
 
 namespace FluidSimulation
 {
+    public static class Globals
+    {
+        private static int _fluidParticleCount = 0;
+        public static int fluidParticleCount => _fluidParticleCount;
+
+        public static void SetParticleCount(int count)
+        {
+            _fluidParticleCount = count;
+        }
+    }
+    
+    public struct FluidParticleGraphics
+    {
+        public Vector3 position;
+        public Vector3 color;
+    }
+    
     public static class FluidUtilities
     {
         public static int MAX_FLUIDPOINT_COUNT = 6553500;
