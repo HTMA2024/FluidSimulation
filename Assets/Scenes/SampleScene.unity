@@ -459,13 +459,15 @@ MonoBehaviour:
   m_DrawParticlesShader: {fileID: 4800000, guid: c19c15976cbc9384c98f94bdae6f3a32,
     type: 3}
   m_DrawDensityShader: {fileID: 4800000, guid: 4c38c55807af36e4581cd8049b6cecaf, type: 3}
+  m_DrawGradientShader: {fileID: 4800000, guid: 16a1d21b556c716428c3a5911699e86c,
+    type: 3}
   m_ComputeShader: {fileID: 7200000, guid: 3ee609e653ae2a44ab767f8ddce950b2, type: 3}
   m_ParticleRadius: 0.01
   m_DensityRadius: 0.05
   m_EnableUpdate: 0
   m_DrawDensityField: 0
+  m_DrawGradientField: 0
   m_DensityColor: {r: 1, g: 1, b: 1, a: 1}
-  m_RenderTexture: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
