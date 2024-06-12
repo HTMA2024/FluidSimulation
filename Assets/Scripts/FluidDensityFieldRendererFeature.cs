@@ -140,6 +140,7 @@ namespace FluidSimulation
         
         class DensityFieldPass : ScriptableRenderPass
         {
+            private bool m_PassInit = false;
             public DensityFieldPass()
             {
                 if (_computeShader == null) return;
@@ -171,6 +172,7 @@ namespace FluidSimulation
                 _args[3] = (uint)_mesh.GetBaseVertex(0);
 
                 _argsBuffer.SetData(_args);
+                m_PassInit = true;
             }
             
             private RTHandle m_CameraColorTarget;
@@ -189,6 +191,8 @@ namespace FluidSimulation
             
             public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
             {
+                if (!m_PassInit) return;
+                
                 CommandBuffer cmd = CommandBufferPool.Get(name: "DensityFieldPass");
                 
                 if (FluidParticleCount == 0) return;
@@ -246,6 +250,7 @@ namespace FluidSimulation
                 _particlesInitBuffer?.Release();
                 _particlesPhysicsBuffer?.Release();
                 _argsBuffer?.Release();
+                m_PassInit = false;
             }
         }
 
