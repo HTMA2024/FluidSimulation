@@ -192,6 +192,10 @@ namespace FluidSimulation
             public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
             {
                 if (!m_PassInit) return;
+                if (_densityMaterial == null) return;
+                if (_particleMaterial == null) return;
+                if (_gradientMaterial == null) return;
+                if (_computeShader == null) return;
                 
                 CommandBuffer cmd = CommandBufferPool.Get(name: "DensityFieldPass");
                 
