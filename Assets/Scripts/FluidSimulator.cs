@@ -17,6 +17,7 @@ namespace FluidSimulation
         [SerializeField][Range(0,1)] private float m_DensityRadius = 0.5f;
         [SerializeField] private bool m_EnableUpdate = false;
         [SerializeField] private bool m_DrawDensityField = false;
+        [SerializeField] private bool m_DrawGradientField = false;
 
         [SerializeField] private Color m_DensityColor = Color.white;
         [SerializeField] private RTHandle m_RenderTexture;
@@ -30,7 +31,7 @@ namespace FluidSimulation
         {
             m_Camera = this.GetComponent<Camera>();
             FluidParticlePhysicsSystem.Init();
-            FluidDensityFieldRendererFeature.Init(m_DrawParticlesShader, m_DrawDensityShader,m_ComputeShader);
+            FluidDensityFieldRendererFeature.SetRendererFeatureParams(m_DrawParticlesShader, m_DrawDensityShader, m_DrawGradientShader,m_ComputeShader);
         }
 
         private void Update()
@@ -48,6 +49,7 @@ namespace FluidSimulation
             FluidDensityFieldRendererFeature.SetDensityColor(m_DensityColor);
             FluidDensityFieldRendererFeature.enableUpdate = m_EnableUpdate;
             FluidDensityFieldRendererFeature.drawDensityField = m_DrawDensityField;
+            FluidDensityFieldRendererFeature.drawGradientField = m_DrawGradientField;
         }
 
 
