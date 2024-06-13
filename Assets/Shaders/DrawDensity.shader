@@ -1,7 +1,6 @@
 Shader "Draw Density"
 {
     Properties{
-    _DensityRadius("Density Radius", Float) = 0
     }
     
     Subshader
@@ -15,6 +14,7 @@ Shader "Draw Density"
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
+            #pragma multi_compile_instancing
             #pragma target 5.0
             #include "UnityCG.cginc"
             #include "Assets/Shaders/ComputeShader/FluidParticle.hlsl"
@@ -31,9 +31,8 @@ Shader "Draw Density"
                 float2 uv : TEXCOORD0;
             };
 
-            float4 _Color;
             StructuredBuffer<FluidParticlePhysics> _ComputeBuffer;
-            float _DensityRadius;
+            float _SmoothRadius;
 
  
             float Mod(float x, float y)
@@ -45,7 +44,7 @@ Shader "Draw Density"
                 v2f o;
 
                 float4 pos = i.vertex ;
-                pos *= _DensityRadius * 2;
+                pos *= _SmoothRadius * 2;
                 pos.z = 1;
                 o.vertex = UnityObjectToClipPos(pos);
                 o.vertex.xy += _ComputeBuffer[instanceID].position.xy;

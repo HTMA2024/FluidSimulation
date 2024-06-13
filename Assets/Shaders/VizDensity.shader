@@ -1,4 +1,4 @@
-Shader "Draw Gradient"
+Shader "Viz Density"
 {
     Properties{
     _SmoothRadius("Density Radius", Float) = 0
@@ -15,6 +15,7 @@ Shader "Draw Gradient"
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
+            #pragma multi_compile_instancing
             #pragma target 5.0
             #include "UnityCG.cginc"
             #include "Assets/Shaders/ComputeShader/FluidParticle.hlsl"

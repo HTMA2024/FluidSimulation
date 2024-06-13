@@ -1,4 +1,5 @@
 using System;
+using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -8,18 +9,12 @@ namespace FluidSimulation
 {
     public class FluidSimulator : MonoBehaviour
     {
-        [SerializeField] private Shader m_DrawParticlesShader;
-        [SerializeField] private Shader m_DrawDensityShader;
-        [SerializeField] private Shader m_DrawGradientShader;
-        [SerializeField] private ComputeShader m_ComputeShader;
-        
         [SerializeField][Range(0,1)] private float m_ParticleRadius = 0.5f;
-        [SerializeField][Range(0,1)] private float m_DensityRadius = 0.5f;
+        [SerializeField][Range(0,1)] private float m_SmoothingRadius = 0.5f;
         [SerializeField] private bool m_EnableUpdate = false;
         [SerializeField] private bool m_DrawDensityField = false;
         [SerializeField] private bool m_DrawGradientField = false;
 
-        [SerializeField] private Color m_DensityColor = Color.white;
         [SerializeField] private RTHandle m_RenderTexture;
             
         private Camera m_Camera;
@@ -31,32 +26,30 @@ namespace FluidSimulation
         {
             m_Camera = this.GetComponent<Camera>();
             FluidParticlePhysicsSystem.Init();
-            FluidDensityFieldRendererFeature.SetRendererFeatureParams(m_DrawParticlesShader, m_DrawDensityShader, m_DrawGradientShader,m_ComputeShader);
         }
 
         private void Update()
         {
-            if (m_EnableUpdate)
-            {
-            }
         }
 
 
         private void OnValidate()
         {
-            FluidDensityFieldRendererFeature.SetParticleRadius(m_ParticleRadius);
-            FluidDensityFieldRendererFeature.SetDensityRadius(m_DensityRadius);
-            FluidDensityFieldRendererFeature.SetDensityColor(m_DensityColor);
-            FluidDensityFieldRendererFeature.enableUpdate = m_EnableUpdate;
-            FluidDensityFieldRendererFeature.drawDensityField = m_DrawDensityField;
-            FluidDensityFieldRendererFeature.drawGradientField = m_DrawGradientField;
+            if (FluidDensityFieldRendererFeature.passCreated)
+            {
+                FluidDensityFieldRendererFeature.SetParticleRadius(m_ParticleRadius);
+                FluidDensityFieldRendererFeature.SetDensityRadius(m_SmoothingRadius);
+                FluidDensityFieldRendererFeature.enableUpdate = m_EnableUpdate;
+                FluidDensityFieldRendererFeature.drawDensityField = m_DrawDensityField;
+                FluidDensityFieldRendererFeature.drawGradientField = m_DrawGradientField;
+            }
         }
 
 
         private void UpdateInfo()
         {
             m_FluidParticleCount = FluidParticleCount;
-            m_RenderTexture = FluidDensityFieldRendererFeature.GetRenderTexture();
+            // m_RenderTexture = FluidDensityFieldRendererFeature.GetRenderTexture();
         }
 
         void AddParticle(Vector3 position, Color color)
@@ -146,7 +139,7 @@ namespace FluidSimulation
                 
                 EditorGUILayout.BeginVertical(new GUIStyle("Box"));
                 EditorGUILayout.LabelField($"Fluid Point Radius: {t.m_ParticleRadius}");
-                EditorGUILayout.LabelField($"Fluid Point Radius: {t.m_DensityRadius}");
+                EditorGUILayout.LabelField($"Fluid Point Radius: {t.m_SmoothingRadius}");
                 EditorGUILayout.LabelField($"FluidPointCount: {t.m_FluidParticleCount}");
                 EditorGUILayout.EndVertical();
 
