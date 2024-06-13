@@ -12,6 +12,7 @@ Shader "Draw Particles"
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
+            #pragma multi_compile_instancing
             #pragma target 5.0
             #include "Assets/Shaders/ComputeShader/FluidParticle.hlsl"
  
@@ -27,7 +28,6 @@ Shader "Draw Particles"
                 float2 uv : TEXCOORD0;
             };
             
- 
             float4 _Color;
             StructuredBuffer<FluidParticlePhysics> _ComputeBuffer;
             float _ParticleRadius;

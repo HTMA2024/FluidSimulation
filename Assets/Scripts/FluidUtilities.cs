@@ -10,7 +10,7 @@ namespace FluidSimulation
 
         public static void SetParticleCount(int count)
         {
-            FluidDensityFieldRendererFeature.UpdateParticleCount(FluidParticleCount, count);
+            FluidDensityFieldRendererFeature.DensityFieldPass.UpdateParticleCount(FluidParticleCount, count);
             FluidParticleCount = count;
         }
     }
