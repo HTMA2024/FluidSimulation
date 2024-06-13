@@ -22,6 +22,9 @@ namespace FluidSimulation
         }
         private static float _pRadius;
         private static float _dRadius;
+        private static Color _underTargetCol;
+        private static Color _overTargetCol;
+        private static Color _aroundTargetCol;
         private static Mesh _mesh;
 
         private static RenderTexture _rt;
@@ -41,6 +44,7 @@ namespace FluidSimulation
 
         internal static bool enableUpdate = false;
         internal static bool drawDensityField = false;
+        internal static bool drawVizDensityMap = false;
         internal static bool drawGradientField = false;
         private static bool _isWriting = false;
         public static bool passCreated = false;
@@ -92,6 +96,13 @@ namespace FluidSimulation
         internal static void SetDensityRadius(float radius)
         {
             _dRadius = radius;
+        }
+        
+        internal static void SetColors(Color overTarget, Color underTarget, Color aroundTarget)
+        {
+            _overTargetCol = overTarget;
+            _underTargetCol = underTarget;
+            _aroundTargetCol = aroundTarget;
         }
 
         #endregion
@@ -205,6 +216,9 @@ namespace FluidSimulation
                 _densityMaterial.SetFloat("_SmoothRadius", _dRadius);
                 _gradientMaterial.SetFloat("_SmoothRadius", _dRadius);
                 _vizDensityMaterial.SetFloat("_SmoothRadius", _dRadius);
+                _vizDensityMaterial.SetColor("_UnderTargetColor", _underTargetCol);
+                _vizDensityMaterial.SetColor("_OverTargetColor", _overTargetCol);
+                _vizDensityMaterial.SetColor("_AroundTargetColor", _aroundTargetCol);
     
                 var deltaTime = Time.deltaTime;
                 _computeShader.SetFloat("_Deltatime", deltaTime);
@@ -222,6 +236,15 @@ namespace FluidSimulation
                 // cmd.DrawMeshInstancedIndirect(_mesh, 0, _densityMaterial, 0, _argsBuffer);
                 
                 if (drawDensityField)
+                {
+                    CreateRenderTexture("RTDensity", ref _textureDescriptor, ref renderingData, ref m_RTHandleDensity);
+                    cmd.SetRenderTarget(m_RTHandleDensity,RenderBufferLoadAction.DontCare,RenderBufferStoreAction.DontCare);
+                    cmd.ClearRenderTarget(true, true, Color.black);
+                    cmd.DrawMeshInstancedIndirect(_mesh, 0, _densityMaterial, 0, _argsBuffer);
+                    cmd.SetGlobalTexture("_FluidDensity", m_RTHandleDensity);
+                }
+
+                if (drawVizDensityMap)
                 {
                     CreateRenderTexture("RTDensity", ref _textureDescriptor, ref renderingData, ref m_RTHandleDensity);
                     cmd.SetRenderTarget(m_RTHandleDensity,RenderBufferLoadAction.DontCare,RenderBufferStoreAction.DontCare);
