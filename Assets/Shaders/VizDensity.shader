@@ -22,21 +22,20 @@ Shader "Viz Density"
  
             struct appdata_t {
                 float4 vertex   : POSITION;
-                float4 color    : COLOR;
                 float2 uv : TEXCOORD0;
             };
             
             struct v2f {
                 float4 vertex   : SV_POSITION;
-                // fixed4 color    : COLOR;
                 float2 uv : TEXCOORD0;
-                float4 screenPos : TEXCOORD1;
-                float4 particleCenterPos : TEXCOORD2;
             };
 
             StructuredBuffer<FluidParticlePhysics> _ComputeBuffer;
             float _SmoothRadius;
             sampler2D _FluidDensity;
+            float4 _UnderTargetColor;
+            float4 _OverTargetColor;
+            float4 _AroundTargetColor;
 
  
             float Mod(float x, float y)
@@ -48,41 +47,18 @@ Shader "Viz Density"
                 v2f o;
 
                 float4 pos = i.vertex ;
-                pos *= _SmoothRadius * 2;
-                pos.z = 1;
                 o.vertex = UnityObjectToClipPos(pos);
-                o.vertex.xy += _ComputeBuffer[instanceID].position.xy;
-                o.screenPos = ComputeScreenPos(o.vertex);
-                o.particleCenterPos = float4(_ComputeBuffer[instanceID].position.xy,0,0);
-                // o.color = float4(_ComputeBuffer[instanceID].color,1);
                 o.uv = i.uv;
 
                 return o;
             }
 
             
-            fixed4 frag(v2f i) : SV_Target {
-
-                float mass = 1;
-                float2 s = i.uv * 2.0 - 1.0;
-                float dis = abs(distance(s,0));
-                // fixed4 res = max(0, 1 - dis);
-                float2 dir = -s/dis;
-                fixed slope = SmoothingKernelDerivative(1, dis);
-
-				float4 screenPos = i.screenPos;
-				float4 screenPosNorm = screenPos / screenPos.w;
-
-				float4 particleCenterPos = i.particleCenterPos * 0.5 + 0.5;
-                particleCenterPos.y = 1 - particleCenterPos.y;
-                
-                // float density = tex2Dlod(_FluidDensity, float4(screenPosNorm.xy,0,0)); // SamplePoint Density
-                float density = tex2Dlod(_FluidDensity, float4(particleCenterPos.xy,0,0)); // Center Density 
-                
-                float2 gradient = -dir * slope * mass / max(density,1e-5);
-                // return density;
-				return float4(gradient.xy ,0,1);
-                // return float4(screenPosNorm.xy,0,1);
+            fixed4 frag(v2f i) : SV_Target
+            {
+                float res = tex2Dlod(_FluidDensity, float4(i.uv,0,0)).r;
+                res = min(res,2);
+				return   lerp(1, 0, res) * _UnderTargetColor + lerp(1, 0, abs(res - 1)) * _AroundTargetColor + lerp(0,1, res - 1) * _OverTargetColor;
             }
  
             ENDCG
