@@ -20,6 +20,8 @@ namespace FluidSimulation
             Physics,
             Graphics
         }
+
+        private static Color _pColor;
         private static float _pRadius;
         private static float _dRadius;
         private static Color _underTargetCol;
@@ -51,8 +53,9 @@ namespace FluidSimulation
 
         #region Helpers
 
-        internal static void SetParticleRadius(float radius)
+        internal static void SetParticleParams(float radius, Color color)
         {
+            _pColor = color;
             _pRadius = radius;
         }
         internal static void SetDensityRadius(float radius)
@@ -60,7 +63,7 @@ namespace FluidSimulation
             _dRadius = radius;
         }
         
-        internal static void SetVizDensity(Color overTarget, Color underTarget, Color aroundTarget, float targetValue)
+        internal static void SetVizDensityParams(Color overTarget, Color underTarget, Color aroundTarget, float targetValue)
         {
             _overTargetCol = overTarget;
             _underTargetCol = underTarget;
@@ -218,6 +221,7 @@ namespace FluidSimulation
                 
                 if (FluidParticleCount == 0) return;
             
+                _particleMaterial.SetColor("_ParticleColor", _pColor);
                 _particleMaterial.SetFloat("_ParticleRadius", _pRadius);
                 _densityMaterial.SetFloat("_SmoothRadius", _dRadius);
                 _gradientMaterial.SetFloat("_SmoothRadius", _dRadius);
@@ -230,58 +234,51 @@ namespace FluidSimulation
                 var deltaTime = Time.deltaTime;
                 _computeShader.SetFloat("_Deltatime", deltaTime);
                 
-                // Compute Physics
-                if (enableUpdate)
-                {
-                    cmd.DispatchCompute(_computeShader,_computeKernel, Mathf.CeilToInt(FluidParticleCount / 64.0f),1,1 );
-                }
                 
-                // Draw
-                cmd.SetRenderTarget(BuiltinRenderTextureType.CurrentActive, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
+                // Draw Density
+                CreateRenderTexture("RTDensity", RenderTextureFormat.RFloat, ref _textureDescriptor, ref renderingData, ref m_RTHandleDensity);
+                cmd.SetRenderTarget(m_RTHandleDensity,RenderBufferLoadAction.DontCare,RenderBufferStoreAction.DontCare);
                 cmd.ClearRenderTarget(true, true, Color.black);
-                cmd.DrawMeshInstancedIndirect(_mesh, 0, _particleMaterial, 0, _argsBuffer);
-                // cmd.DrawMeshInstancedIndirect(_mesh, 0, _densityMaterial, 0, _argsBuffer);
-                
+                cmd.DrawMeshInstancedIndirect(_mesh, 0, _densityMaterial, 0, _argsBuffer);
+                cmd.SetGlobalTexture("_FluidDensity", m_RTHandleDensity);
                 if (drawDensityField)
                 {
-                    CreateRenderTexture("RTDensity", ref _textureDescriptor, ref renderingData, ref m_RTHandleDensity);
-                    cmd.SetRenderTarget(m_RTHandleDensity,RenderBufferLoadAction.DontCare,RenderBufferStoreAction.DontCare);
-                    cmd.ClearRenderTarget(true, true, Color.black);
-                    cmd.DrawMeshInstancedIndirect(_mesh, 0, _densityMaterial, 0, _argsBuffer);
-                    cmd.SetGlobalTexture("_FluidDensity", m_RTHandleDensity);
                     Blitter.BlitCameraTexture(cmd, m_RTHandleDensity, m_CameraColorTarget, 0);
                 }
 
+                // Viz Density
                 if (drawVizDensityMap)
                 {
-                    CreateRenderTexture("RTDensity", ref _textureDescriptor, ref renderingData, ref m_RTHandleDensity);
-                    cmd.SetRenderTarget(m_RTHandleDensity,RenderBufferLoadAction.DontCare,RenderBufferStoreAction.DontCare);
-                    cmd.ClearRenderTarget(true, true, Color.black);
-                    cmd.DrawMeshInstancedIndirect(_mesh, 0, _densityMaterial, 0, _argsBuffer);
-                    cmd.SetGlobalTexture("_FluidDensity", m_RTHandleDensity);
-                    
-                    CreateRenderTexture("VizDensityRT",ref _textureDescriptor, ref renderingData, ref m_RTHandleVizDensity);
+                    CreateRenderTexture("VizDensityRT", RenderTextureFormat.ARGBFloat,ref _textureDescriptor, ref renderingData, ref m_RTHandleVizDensity);
                     cmd.SetRenderTarget(m_RTHandleVizDensity,RenderBufferLoadAction.DontCare,RenderBufferStoreAction.DontCare);
                     cmd.ClearRenderTarget(true, true, Color.black);
                     cmd.Blit(m_RTHandleDensity, m_RTHandleVizDensity, _vizDensityMaterial,0);
+                
                     Blitter.BlitCameraTexture(cmd, m_RTHandleVizDensity, m_CameraColorTarget, 0);
                 }
                 
-                
+                CreateRenderTexture("RTGradient",RenderTextureFormat.ARGBFloat,ref _textureDescriptor, ref renderingData, ref m_RTHandleGradient);
+                cmd.SetRenderTarget(m_RTHandleGradient, RenderBufferLoadAction.DontCare,RenderBufferStoreAction.DontCare );
+                cmd.ClearRenderTarget(true, true, Color.black);
+                cmd.DrawMeshInstancedIndirect(_mesh, 0, _gradientMaterial, 0, _argsBuffer);
                 if (drawGradientField)
                 {
-                    CreateRenderTexture("RTDensity",ref _textureDescriptor, ref renderingData, ref m_RTHandleDensity);
-                    cmd.SetRenderTarget(m_RTHandleDensity,RenderBufferLoadAction.DontCare,RenderBufferStoreAction.DontCare);
-                    cmd.ClearRenderTarget(true, true, Color.black);
-                    cmd.DrawMeshInstancedIndirect(_mesh, 0, _densityMaterial, 0, _argsBuffer);
-                    cmd.SetGlobalTexture("_FluidDensity", m_RTHandleDensity);
-                    
-                    CreateRenderTexture("RTGradient",ref _textureDescriptor, ref renderingData, ref m_RTHandleGradient);
-                    cmd.SetRenderTarget(m_RTHandleGradient, RenderBufferLoadAction.DontCare,RenderBufferStoreAction.DontCare );
-                    cmd.ClearRenderTarget(true, true, Color.black);
-                    cmd.DrawMeshInstancedIndirect(_mesh, 0, _gradientMaterial, 0, _argsBuffer);
                     Blitter.BlitCameraTexture(cmd, m_RTHandleGradient, m_CameraColorTarget, 0);
                 }
+                
+                // Compute Physics
+                if (enableUpdate)
+                {
+                    cmd.SetComputeTextureParam(_computeShader, _computeKernel, "_FluidDensity", m_RTHandleDensity);
+                    cmd.SetComputeTextureParam(_computeShader, _computeKernel, "_FluidGradient", m_RTHandleGradient);
+                    cmd.DispatchCompute(_computeShader,_computeKernel, Mathf.CeilToInt(FluidParticleCount / 64.0f),1,1 );
+                }
+                
+                // Draw Particles
+                // CreateRenderTexture("RTParticles",ref _textureDescriptor, ref renderingData, ref m_RTHandleParticle);
+                cmd.SetRenderTarget(m_CameraColorTarget);
+                cmd.DrawMeshInstancedIndirect(_mesh, 0, _particleMaterial, 0, _argsBuffer);
+                
                 context.ExecuteCommandBuffer(cmd);
                 CommandBufferPool.Release(cmd);
             }
@@ -301,14 +298,14 @@ namespace FluidSimulation
             }
         }
 
-        private void SetRTHandle(ref RenderingData renderingData)
-        {
-            // if (m_RTHandle != null) return;
-            if (renderingData.cameraData.cameraType != CameraType.Game) return;
-            RenderTextureDescriptor renderTextureDescriptor = new RenderTextureDescriptor();
-            
-            Vector2Int screen = new Vector2Int(renderingData.cameraData.camera.pixelWidth, renderingData.cameraData.camera.pixelHeight);
-        }
+        // private void SetRTHandle(ref RenderingData renderingData)
+        // {
+        //     // if (m_RTHandle != null) return;
+        //     if (renderingData.cameraData.cameraType != CameraType.Game) return;
+        //     RenderTextureDescriptor renderTextureDescriptor = new RenderTextureDescriptor();
+        //     
+        //     Vector2Int screen = new Vector2Int(renderingData.cameraData.camera.pixelWidth, renderingData.cameraData.camera.pixelHeight);
+        // }
 
         public ComputeShader computeShader;
         public Shader drawParticlesShader;
@@ -323,7 +320,7 @@ namespace FluidSimulation
             passCreated = true;
         }
 
-        public static void CreateRenderTexture(string rtName, ref RenderTextureDescriptor rtTextureDescriptor ,ref RenderingData renderingData, ref RTHandle rtHandle)
+        public static void CreateRenderTexture(string rtName,RenderTextureFormat format , ref RenderTextureDescriptor rtTextureDescriptor ,ref RenderingData renderingData, ref RTHandle rtHandle)
         {
             if (rtTextureDescriptor.width != renderingData.cameraData.camera.pixelWidth || rtTextureDescriptor.height != renderingData.cameraData.camera.pixelHeight || rtHandle == null)
             {
@@ -335,14 +332,14 @@ namespace FluidSimulation
                     dimension = TextureDimension.Tex2D,
                     volumeDepth = 1,
                     useMipMap = false,
-                    colorFormat = RenderTextureFormat.ARGBFloat,
+                    colorFormat = format,
                     msaaSamples = 1,
                     enableRandomWrite = true
                 };
                 if (rtHandle!=null) rtHandle.Release();
                 rtHandle = RTHandles.Alloc(
                     rtTextureDescriptor,
-                    FilterMode.Bilinear,
+                    FilterMode.Point,
                     TextureWrapMode.Clamp,
                     false,
                     1,

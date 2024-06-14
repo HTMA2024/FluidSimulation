@@ -12,6 +12,7 @@ namespace FluidSimulation
         [SerializeField][Range(0,1)] private float m_ParticleRadius = 0.5f;
         [SerializeField][Range(0,1)] private float m_SmoothingRadius = 0.5f;
         
+        [SerializeField] private Color _particleColor;
         [SerializeField] private Color _underTargetCol;
         [SerializeField] private Color _overTargetCol;
         [SerializeField] private Color _aroundTargetCol;
@@ -26,7 +27,6 @@ namespace FluidSimulation
             
         private Camera m_Camera;
         private int m_FluidParticleCount = 0;
-        private int m_DrawParticlesRTID = -1;
 
 
         private void Awake()
@@ -44,9 +44,9 @@ namespace FluidSimulation
         {
             if (FluidDensityFieldRendererFeature.passCreated)
             {
-                FluidDensityFieldRendererFeature.SetParticleRadius(m_ParticleRadius);
+                FluidDensityFieldRendererFeature.SetParticleParams(m_ParticleRadius, _particleColor);
                 FluidDensityFieldRendererFeature.SetDensityRadius(m_SmoothingRadius);
-                FluidDensityFieldRendererFeature.SetVizDensity(_overTargetCol, _underTargetCol,_aroundTargetCol, _targetValue);
+                FluidDensityFieldRendererFeature.SetVizDensityParams(_overTargetCol, _underTargetCol,_aroundTargetCol, _targetValue);
                 FluidDensityFieldRendererFeature.enableUpdate = m_EnableUpdate;
                 FluidDensityFieldRendererFeature.drawDensityField = m_DrawDensityField;
                 FluidDensityFieldRendererFeature.drawVizDensityMap = m_DrawVizDensityMap;
@@ -61,9 +61,9 @@ namespace FluidSimulation
             // m_RenderTexture = FluidDensityFieldRendererFeature.GetRenderTexture();
         }
 
-        void AddParticle(Vector3 position, Color color)
+        void AddParticle(Vector3 position)
         {
-            FluidParticlePhysicsSystem.Add(position, color);
+            FluidParticlePhysicsSystem.Add(position);
         }
 
         void CleanParticles()
@@ -74,6 +74,11 @@ namespace FluidSimulation
         private void FillScreen(int density)
         {
             FluidParticlePhysicsSystem.FillScreen(m_Camera.pixelWidth,m_Camera.pixelHeight,density);
+        }
+
+        private void FillScreenRandom(int count)
+        {
+            FluidParticlePhysicsSystem.FillScreenRandom(count);
         }
 
         private void OnDestroy()
@@ -88,8 +93,9 @@ namespace FluidSimulation
         private class FluidSimulatorEditor : Editor
         {
             private Vector2 m_ParticlePosition;
-            private Color m_CircleColor = Color.white;
+            private Color m_ParticleColor = Color.white;
             private int m_Density = 100;
+            private int m_Count = 100;
             public override void OnInspectorGUI()
             {
                 // Create a new GUIStyle for the bold label
@@ -111,14 +117,11 @@ namespace FluidSimulation
                 m_ParticlePosition = EditorGUILayout.Vector2Field("Position", m_ParticlePosition);
                 
                 GUILayout.Space(10);  
-                m_CircleColor = EditorGUILayout.ColorField("Color", m_CircleColor);
-                
-                GUILayout.Space(10);  
                 GUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
                 if (GUILayout.Button("Add Fluid Particle", GUILayout.Width(150)))
                 {
-                    t.AddParticle(m_ParticlePosition, m_CircleColor);
+                    t.AddParticle(m_ParticlePosition);
                 }
                 if (GUILayout.Button("Clean", GUILayout.Width(100)))
                 {
@@ -135,6 +138,17 @@ namespace FluidSimulation
                     t.FillScreen(m_Density);
                 }
                 GUILayout.EndHorizontal();
+                
+                GUILayout.Space(10);  
+                GUILayout.BeginHorizontal();
+                m_Count = EditorGUILayout.IntField("Count", m_Count);
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button("Fill Screen Random", GUILayout.Width(200)))
+                {
+                    t.FillScreenRandom(m_Count);
+                }
+                GUILayout.EndHorizontal();
+                
                 
                 GUILayout.Space(10);  
                 GUILayout.BeginHorizontal();
