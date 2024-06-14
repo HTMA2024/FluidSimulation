@@ -35,7 +35,8 @@ Shader "Draw Gradient"
 
             StructuredBuffer<FluidParticlePhysics> _ComputeBuffer;
             float _SmoothRadius;
-            sampler2D _FluidDensity;
+            UNITY_DECLARE_TEX2D(_FluidDensity);
+            SamplerState sampler_point_clamp;
 
  
             float Mod(float x, float y)
@@ -76,7 +77,8 @@ Shader "Draw Gradient"
                 particleCenterPos.y = 1 - particleCenterPos.y;
                 
                 // float density = tex2Dlod(_FluidDensity, float4(screenPosNorm.xy,0,0)); // SamplePoint Density
-                float density = tex2Dlod(_FluidDensity, float4(particleCenterPos.xy,0,0)); // Center Density 
+                // float density = tex2Dlod(_FluidDensity, float4(particleCenterPos.xy,0,0)); // Center Density 
+                float density = _FluidDensity.Sample(sampler_point_clamp, float4(particleCenterPos.xy,0,0));
                 
                 float2 gradient = -dir * slope * mass / max(density,1e-5);
                 // return density;

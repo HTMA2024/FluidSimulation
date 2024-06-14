@@ -15,6 +15,7 @@ namespace FluidSimulation
         [SerializeField] private Color _underTargetCol;
         [SerializeField] private Color _overTargetCol;
         [SerializeField] private Color _aroundTargetCol;
+        [SerializeField] private float _targetValue = 1f;
         
         [SerializeField] private bool m_EnableUpdate = false;
         [SerializeField] private bool m_DrawDensityField = false;
@@ -45,7 +46,7 @@ namespace FluidSimulation
             {
                 FluidDensityFieldRendererFeature.SetParticleRadius(m_ParticleRadius);
                 FluidDensityFieldRendererFeature.SetDensityRadius(m_SmoothingRadius);
-                FluidDensityFieldRendererFeature.SetColors(_overTargetCol, _underTargetCol,_aroundTargetCol);
+                FluidDensityFieldRendererFeature.SetVizDensity(_overTargetCol, _underTargetCol,_aroundTargetCol, _targetValue);
                 FluidDensityFieldRendererFeature.enableUpdate = m_EnableUpdate;
                 FluidDensityFieldRendererFeature.drawDensityField = m_DrawDensityField;
                 FluidDensityFieldRendererFeature.drawVizDensityMap = m_DrawVizDensityMap;
