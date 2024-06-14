@@ -382,7 +382,23 @@ namespace FluidSimulation
                     msaaSamples = 1,
                     enableRandomWrite = true
                 };
-                if (rtHandle!=null) rtHandle.Release();
+            }
+            
+            if (rtHandle == null)
+            {
+                rtHandle = RTHandles.Alloc(
+                    rtTextureDescriptor,
+                    FilterMode.Point,
+                    TextureWrapMode.Clamp,
+                    false,
+                    1,
+                    0,
+                    rtName
+                );
+            } 
+            else if (rtHandle.rt.width != rtTextureDescriptor.width || rtHandle.rt.height != rtTextureDescriptor.height)
+            {
+                rtHandle.Release();
                 rtHandle = RTHandles.Alloc(
                     rtTextureDescriptor,
                     FilterMode.Point,
