@@ -17,11 +17,6 @@ Texture2D<float> _FluidDensity;
 Texture2D<float4> _FluidPressure;
 float4 _TexelSize;
 
-float2 CalculatePressureForce()
-{
-	float2 pressure = float2(0, 0);
-	
-}
 
 [numthreads(tx,1,1)]
 void FluidSimulationCS (uint3 id : SV_DispatchThreadID)
@@ -39,7 +34,7 @@ void FluidSimulationCS (uint3 id : SV_DispatchThreadID)
 	float density = _FluidDensity[texUV.xy];
 	float2 pressure = _FluidPressure[texUV.xy].xy;
 	float3 acceleration = 0;
-	acceleration.xy = density < 1e-5 ? 0.0 : pressure/ density;
+	acceleration.xy = pressure/ max(density, 1e-5);
 	acceleration.y *= -1;
 	_FluidParticlePhysics[idx].acceleration = acceleration;
 	
