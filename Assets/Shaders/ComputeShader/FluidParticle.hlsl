@@ -40,4 +40,12 @@ float SmoothingKernelDerivative(float radius, float dst)
 	return scale * dst * f * f;
 }
 
+float ConvertDensityToPressure(float density, float targetDensity, float pressureMultiplier)
+{
+	float densityError = density - targetDensity;
+	float pressure = densityError * pressureMultiplier; 
+	return pressure;
+	
+}
+
 #endif // UNITY_CG_INCLUDED
