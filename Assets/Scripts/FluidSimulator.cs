@@ -9,19 +9,22 @@ namespace FluidSimulation
 {
     public class FluidSimulator : MonoBehaviour
     {
-        [SerializeField][Range(0,1)] private float m_ParticleRadius = 0.5f;
-        [SerializeField][Range(0,1)] private float m_SmoothingRadius = 0.5f;
+        [SerializeField][Range(1e-3f,1)] private float m_ParticleRadius = 0.5f;
+        [SerializeField][Range(1e-3f,1)] private float m_SmoothingRadius = 0.5f;
         
         [SerializeField] private Color _particleColor;
         [SerializeField] private Color _underTargetCol;
         [SerializeField] private Color _overTargetCol;
         [SerializeField] private Color _aroundTargetCol;
-        [SerializeField] private float _targetValue = 1f;
+        [SerializeField][Range(1e-3f,10)] private float _targetDensity = 1f;
+        [SerializeField][Range(1e-3f,1)] private float _pressureMultiplier = 1f;
         
         [SerializeField] private bool m_EnableUpdate = false;
         [SerializeField] private bool m_DrawDensityField = false;
         [SerializeField] private bool m_DrawVizDensityMap = false;
         [SerializeField] private bool m_DrawGradientField = false;
+        [SerializeField] private bool m_DrawPressureField = false;
+        [SerializeField] private bool m_DrawParticles = false;
 
         [SerializeField] private RTHandle m_RenderTexture;
             
@@ -46,11 +49,14 @@ namespace FluidSimulation
             {
                 FluidDensityFieldRendererFeature.SetParticleParams(m_ParticleRadius, _particleColor);
                 FluidDensityFieldRendererFeature.SetDensityRadius(m_SmoothingRadius);
-                FluidDensityFieldRendererFeature.SetVizDensityParams(_overTargetCol, _underTargetCol,_aroundTargetCol, _targetValue);
+                FluidDensityFieldRendererFeature.SetVizDensityParams(_overTargetCol, _underTargetCol,_aroundTargetCol, _targetDensity);
+                FluidDensityFieldRendererFeature.SetPressureParams(_targetDensity, _pressureMultiplier);
                 FluidDensityFieldRendererFeature.enableUpdate = m_EnableUpdate;
                 FluidDensityFieldRendererFeature.drawDensityField = m_DrawDensityField;
                 FluidDensityFieldRendererFeature.drawVizDensityMap = m_DrawVizDensityMap;
                 FluidDensityFieldRendererFeature.drawGradientField = m_DrawGradientField;
+                FluidDensityFieldRendererFeature.drawPressureField = m_DrawPressureField;
+                FluidDensityFieldRendererFeature.drawParticles = m_DrawParticles;
             }
         }
 

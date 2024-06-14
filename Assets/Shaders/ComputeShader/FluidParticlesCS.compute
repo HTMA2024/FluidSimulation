@@ -2,6 +2,7 @@
 #pragma kernel InitCS
 
 #include "FluidParticle.hlsl"
+            #include "UnityCG.cginc"
 
 #define tx 64
 
@@ -12,29 +13,47 @@ StructuredBuffer<FluidParticlePhysics> _FluidParticleInit;
 RWStructuredBuffer<FluidParticleGraphics> _FluidParticleGraphics;
 RWStructuredBuffer<FluidParticlePhysics> _FluidParticlePhysics;
 
-Texture2D<float4> _FluidDensity;
-Texture2D<float4> _FluidGradient;
+Texture2D<float> _FluidDensity;
+Texture2D<float4> _FluidPressure;
+float4 _TexelSize;
+
+float2 CalculatePressureForce()
+{
+	float2 pressure = float2(0, 0);
+	
+}
 
 [numthreads(tx,1,1)]
 void FluidSimulationCS (uint3 id : SV_DispatchThreadID)
 {
 	const uint idx = id.x;
-	float energyDumping = 0.9f;
+	float energyDumping = 0.98f;
 	if(idx > _CurrFluidParticleCount) return;
 
-	float density = _FluidDensity[_FluidParticlePhysics[idx].position.xy];
-	float2 gradient = _FluidGradient[_FluidParticlePhysics[idx].position.xy].xy;
-
-	float3 position = _FluidParticlePhysics[idx].position + _FluidParticlePhysics[idx].velocity * _Deltatime;
-	float3 velocity = _FluidParticlePhysics[idx].velocity + _FluidParticlePhysics[idx].acceleration * _Deltatime;
+	// Update Acceleration
+	float2 texUV = _FluidParticlePhysics[idx].position.xy * 0.5f + 0.5f;
+	texUV.y = 1 - texUV.y;
+	texUV.x *= _TexelSize.x;
+	texUV.y *= _TexelSize.y;
 	
-	if (position.x - 1 > 1e-5 || position.x + 1 < 1e-5)
+	float density = _FluidDensity[texUV.xy];
+	float2 pressure = _FluidPressure[texUV.xy].xy;
+	float3 acceleration = 0;
+	acceleration.xy = density < 1e-5 ? 0.0 : pressure/ density;
+	acceleration.y *= -1;
+	_FluidParticlePhysics[idx].acceleration = acceleration;
+	
+	// Update Position
+	float3 velocity = _FluidParticlePhysics[idx].velocity + acceleration * _Deltatime;
+	float3 position = _FluidParticlePhysics[idx].position + velocity * _Deltatime;
+	
+	if (position.x - 1 > -1e-5 || position.x + 1 < 1e-5)
 	{
-	    velocity.x *= -1 * energyDumping;
+	    velocity.x *= -1;
 	}
-	if ( position.y - 1 > 1e-5 || position.y + 1 < 1e-5 )
+	if ( position.y - 1 > -1e-5 || position.y + 1 < 1e-5 )
 	{
-	    velocity.y *= -1 * energyDumping;
+	    velocity.y *= -1;
 	}
 	
 	if (position.x - 1 > 1e-5)
@@ -58,7 +77,7 @@ void FluidSimulationCS (uint3 id : SV_DispatchThreadID)
 	}
 
 	_FluidParticlePhysics[idx].position = position;
-	_FluidParticlePhysics[idx].velocity = velocity;
+	_FluidParticlePhysics[idx].velocity = velocity * energyDumping;
 }
 
 
