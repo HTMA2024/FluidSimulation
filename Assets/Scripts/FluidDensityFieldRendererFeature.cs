@@ -25,14 +25,11 @@ namespace FluidSimulation
         private static Color _underTargetCol;
         private static Color _overTargetCol;
         private static Color _aroundTargetCol;
+        private static float _targetValue;
         private static Mesh _mesh;
 
         private static RenderTexture _rt;
 
-        private static ComputeBuffer _particlesInitBuffer;
-        private static ComputeBuffer _particlesGraphicsBuffer;
-        private static ComputeBuffer _particlesPhysicsBuffer;
-        private static ComputeBuffer _argsBuffer;
 
         private static int _computeKernel;
         private static int _initKernel;
@@ -51,6 +48,99 @@ namespace FluidSimulation
 
         
         
+
+        #region Helpers
+
+        internal static void SetParticleRadius(float radius)
+        {
+            _pRadius = radius;
+        }
+        internal static void SetDensityRadius(float radius)
+        {
+            _dRadius = radius;
+        }
+        
+        internal static void SetVizDensity(Color overTarget, Color underTarget, Color aroundTarget, float targetValue)
+        {
+            _overTargetCol = overTarget;
+            _underTargetCol = underTarget;
+            _aroundTargetCol = aroundTarget;
+            _targetValue = targetValue;
+        }
+
+        #endregion
+
+        #region RenderFeature
+
+
+        public class DensityFieldPass : ScriptableRenderPass
+        {
+            private bool m_PassInit = false;
+            private static ComputeShader _computeShader;
+
+            private static Material _particleMaterial;
+            private static Material _densityMaterial;
+            private static Material _gradientMaterial;
+            private static Material _vizDensityMaterial;
+            
+            private static RTHandle m_RTHandleParticle;
+            private static RTHandle m_RTHandleDensity;
+            private static RTHandle m_RTHandleVizDensity;
+            private static RTHandle m_RTHandleGradient;
+
+            private static RenderTextureDescriptor _textureDescriptor;
+            
+            private static ComputeBuffer _particlesInitBuffer;
+            private static ComputeBuffer _particlesGraphicsBuffer;
+            private static ComputeBuffer _particlesPhysicsBuffer;
+            private static ComputeBuffer _argsBuffer;
+            
+            public DensityFieldPass(ComputeShader computeShader, Shader drawParticlesShader, Shader drawDensityShader, Shader vizDensityShader, Shader drawGradientShader)
+            {
+                _computeShader = computeShader;
+                _particleMaterial = new Material(drawParticlesShader);
+                _densityMaterial = new Material(drawDensityShader);
+                _gradientMaterial = new Material(drawGradientShader);
+                _vizDensityMaterial = new Material(vizDensityShader);
+                
+                _particlesGraphicsBuffer?.Release();
+                _particlesInitBuffer?.Release();
+                _particlesPhysicsBuffer?.Release();
+                _argsBuffer?.Release();
+                
+                _particlesInitBuffer = new ComputeBuffer(MAX_FLUIDPOINT_COUNT, Marshal.SizeOf(typeof(FluidParticlePhysics)), ComputeBufferType.Default, ComputeBufferMode.SubUpdates);
+                _particlesGraphicsBuffer = new ComputeBuffer(MAX_FLUIDPOINT_COUNT, Marshal.SizeOf(typeof(FluidParticleGraphics)), ComputeBufferType.Default);
+                _particlesPhysicsBuffer = new ComputeBuffer(MAX_FLUIDPOINT_COUNT, Marshal.SizeOf(typeof(FluidParticlePhysics)), ComputeBufferType.Default);
+                _argsBuffer = new ComputeBuffer(1, _args.Length * sizeof(uint), ComputeBufferType.IndirectArguments,ComputeBufferMode.SubUpdates);
+
+                _computeKernel = _computeShader.FindKernel("FluidSimulationCS");
+                _computeShader.SetInt("_FluidParticleCount", FluidParticleCount);
+                _computeShader.SetBuffer(_computeKernel,"_FluidParticleInit", _particlesInitBuffer);
+                _computeShader.SetBuffer(_computeKernel,"_FluidParticlePhysics", _particlesPhysicsBuffer);
+                _computeShader.SetBuffer(_computeKernel,"_FluidParticleGraphics", _particlesGraphicsBuffer);
+                
+                _initKernel = _computeShader.FindKernel("InitCS");
+                _computeShader.SetBuffer(_initKernel,"_FluidParticleInit", _particlesInitBuffer);
+                _computeShader.SetBuffer(_initKernel,"_FluidParticlePhysics", _particlesPhysicsBuffer);
+                
+                _particleMaterial.SetBuffer("_ComputeBuffer", _particlesPhysicsBuffer);
+                _densityMaterial.SetBuffer("_ComputeBuffer", _particlesPhysicsBuffer);
+                _gradientMaterial.SetBuffer("_ComputeBuffer", _particlesPhysicsBuffer);
+                _vizDensityMaterial.SetBuffer("_ComputeBuffer", _particlesPhysicsBuffer);
+
+                _mesh = CreateQuad(1, 1);
+                _args[0] = (uint)_mesh.GetIndexCount(0);
+                _args[1] = (uint)FluidParticleCount;
+                _args[2] = (uint)_mesh.GetIndexStart(0);
+                _args[3] = (uint)_mesh.GetBaseVertex(0);
+
+                _argsBuffer.SetData(_args);
+
+                _textureDescriptor = new RenderTextureDescriptor();
+                    
+                m_PassInit = true;
+            }
+            
         #region Update Data
 
         internal static NativeArray<T> BeginWriteBuffer<T>(FluidComputeBufferType fluidComputeBufferType, int startIndex, int count) where T : struct
@@ -86,90 +176,6 @@ namespace FluidSimulation
 
 
         #endregion
-
-        #region Helpers
-
-        internal static void SetParticleRadius(float radius)
-        {
-            _pRadius = radius;
-        }
-        internal static void SetDensityRadius(float radius)
-        {
-            _dRadius = radius;
-        }
-        
-        internal static void SetColors(Color overTarget, Color underTarget, Color aroundTarget)
-        {
-            _overTargetCol = overTarget;
-            _underTargetCol = underTarget;
-            _aroundTargetCol = aroundTarget;
-        }
-
-        #endregion
-
-        #region RenderFeature
-
-
-        public class DensityFieldPass : ScriptableRenderPass
-        {
-            private bool m_PassInit = false;
-            private static ComputeShader _computeShader;
-
-            private static Material _particleMaterial;
-            private static Material _densityMaterial;
-            private static Material _gradientMaterial;
-            private static Material _vizDensityMaterial;
-            
-            private static RTHandle m_RTHandleParticle;
-            private static RTHandle m_RTHandleDensity;
-            private static RTHandle m_RTHandleVizDensity;
-            private static RTHandle m_RTHandleGradient;
-
-            private static RenderTextureDescriptor _textureDescriptor;
-            
-            
-            public DensityFieldPass(ComputeShader computeShader, Shader drawParticlesShader, Shader drawDensityShader, Shader vizDensityShader, Shader drawGradientShader)
-            {
-                _computeShader = computeShader;
-                _particleMaterial = new Material(drawParticlesShader);
-                _densityMaterial = new Material(drawDensityShader);
-                _gradientMaterial = new Material(drawGradientShader);
-                _vizDensityMaterial = new Material(vizDensityShader);
-                
-                _particlesInitBuffer = new ComputeBuffer(MAX_FLUIDPOINT_COUNT, Marshal.SizeOf(typeof(FluidParticlePhysics)), ComputeBufferType.Default, ComputeBufferMode.SubUpdates);
-                _particlesGraphicsBuffer = new ComputeBuffer(MAX_FLUIDPOINT_COUNT, Marshal.SizeOf(typeof(FluidParticleGraphics)), ComputeBufferType.Default);
-                _particlesPhysicsBuffer = new ComputeBuffer(MAX_FLUIDPOINT_COUNT, Marshal.SizeOf(typeof(FluidParticlePhysics)), ComputeBufferType.Default);
-
-                _argsBuffer = new ComputeBuffer(1, _args.Length * sizeof(uint), ComputeBufferType.IndirectArguments,ComputeBufferMode.SubUpdates);
-
-                _computeKernel = _computeShader.FindKernel("FluidSimulationCS");
-                _computeShader.SetInt("_FluidParticleCount", FluidParticleCount);
-                _computeShader.SetBuffer(_computeKernel,"_FluidParticleInit", _particlesInitBuffer);
-                _computeShader.SetBuffer(_computeKernel,"_FluidParticlePhysics", _particlesPhysicsBuffer);
-                _computeShader.SetBuffer(_computeKernel,"_FluidParticleGraphics", _particlesGraphicsBuffer);
-                
-                _initKernel = _computeShader.FindKernel("InitCS");
-                _computeShader.SetBuffer(_initKernel,"_FluidParticleInit", _particlesInitBuffer);
-                _computeShader.SetBuffer(_initKernel,"_FluidParticlePhysics", _particlesPhysicsBuffer);
-                
-                _particleMaterial.SetBuffer("_ComputeBuffer", _particlesPhysicsBuffer);
-                _densityMaterial.SetBuffer("_ComputeBuffer", _particlesPhysicsBuffer);
-                _gradientMaterial.SetBuffer("_ComputeBuffer", _particlesPhysicsBuffer);
-                _vizDensityMaterial.SetBuffer("_ComputeBuffer", _particlesPhysicsBuffer);
-
-                _mesh = CreateQuad(1, 1);
-                _args[0] = (uint)_mesh.GetIndexCount(0);
-                _args[1] = (uint)FluidParticleCount;
-                _args[2] = (uint)_mesh.GetIndexStart(0);
-                _args[3] = (uint)_mesh.GetBaseVertex(0);
-
-                _argsBuffer.SetData(_args);
-
-                _textureDescriptor = new RenderTextureDescriptor();
-                    
-                m_PassInit = true;
-            }
-            
             private RTHandle m_CameraColorTarget;
             public void SetTarget(RTHandle colorHandle)
             {
@@ -219,6 +225,7 @@ namespace FluidSimulation
                 _vizDensityMaterial.SetColor("_UnderTargetColor", _underTargetCol);
                 _vizDensityMaterial.SetColor("_OverTargetColor", _overTargetCol);
                 _vizDensityMaterial.SetColor("_AroundTargetColor", _aroundTargetCol);
+                _vizDensityMaterial.SetFloat("_TargetValue", _targetValue);
     
                 var deltaTime = Time.deltaTime;
                 _computeShader.SetFloat("_Deltatime", deltaTime);
@@ -242,6 +249,7 @@ namespace FluidSimulation
                     cmd.ClearRenderTarget(true, true, Color.black);
                     cmd.DrawMeshInstancedIndirect(_mesh, 0, _densityMaterial, 0, _argsBuffer);
                     cmd.SetGlobalTexture("_FluidDensity", m_RTHandleDensity);
+                    Blitter.BlitCameraTexture(cmd, m_RTHandleDensity, m_CameraColorTarget, 0);
                 }
 
                 if (drawVizDensityMap)

@@ -39,21 +39,21 @@ namespace FluidSimulation
         
         internal static void Add(Vector3 position, Color color)
         {
-            var fluidParticlesPhysicsNative = BeginWriteBuffer<FluidParticlePhysics>(FluidComputeBufferType.Physics,FluidParticleCount,1);
+            var fluidParticlesPhysicsNative = DensityFieldPass.BeginWriteBuffer<FluidParticlePhysics>(FluidComputeBufferType.Physics,FluidParticleCount,1);
             
             var fluidParticle = fluidParticlesPhysicsNative[0];
             var particle = CreateParticle(position);
             fluidParticle = particle;
             fluidParticlesPhysicsNative[0] = fluidParticle;
             
-            EndWriteBuffer(FluidComputeBufferType.Physics,1);
+            DensityFieldPass.EndWriteBuffer(FluidComputeBufferType.Physics,1);
             SetParticleCount(FluidParticleCount + 1);
         }
         
         internal static void AddMultiple(Vector3[] positions, int count)
         {
             
-            var fluidParticlesPhysicsNative = BeginWriteBuffer<FluidParticlePhysics>(FluidComputeBufferType.Physics, FluidParticleCount,count);
+            var fluidParticlesPhysicsNative = DensityFieldPass.BeginWriteBuffer<FluidParticlePhysics>(FluidComputeBufferType.Physics, FluidParticleCount,count);
             for (int i = 0; i < count; i++)
             {
                 var fluidParticle = fluidParticlesPhysicsNative[i];
@@ -61,7 +61,7 @@ namespace FluidSimulation
                 fluidParticle = particle;
                 fluidParticlesPhysicsNative[i] = fluidParticle;
             }
-            EndWriteBuffer(FluidComputeBufferType.Physics,count);
+            DensityFieldPass.EndWriteBuffer(FluidComputeBufferType.Physics,count);
             SetParticleCount(FluidParticleCount + count);
         }
         
@@ -90,14 +90,14 @@ namespace FluidSimulation
         public static void Clean()
         {
             if (FluidParticleCount == 0) return;
-            var fluidParticlesPhysicsNative = BeginWriteBuffer<FluidParticlePhysics>(FluidComputeBufferType.Physics,0,FluidParticleCount);
+            var fluidParticlesPhysicsNative = DensityFieldPass.BeginWriteBuffer<FluidParticlePhysics>(FluidComputeBufferType.Physics,0,FluidParticleCount);
             for (int i = 0; i < FluidParticleCount; i++)
             {
                 var fluidParticle = fluidParticlesPhysicsNative[i];
                 fluidParticle = CleanParticle();
                 fluidParticlesPhysicsNative[i] = fluidParticle;
             }
-            EndWriteBuffer(FluidComputeBufferType.Physics,FluidParticleCount);
+            DensityFieldPass.EndWriteBuffer(FluidComputeBufferType.Physics,FluidParticleCount);
             SetParticleCount(0);
         }
         

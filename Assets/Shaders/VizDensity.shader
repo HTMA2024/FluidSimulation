@@ -30,12 +30,15 @@ Shader "Viz Density"
                 float2 uv : TEXCOORD0;
             };
 
+            UNITY_DECLARE_TEX2D(_FluidDensity);
+            SamplerState sampler_point_clamp;
             StructuredBuffer<FluidParticlePhysics> _ComputeBuffer;
             float _SmoothRadius;
-            sampler2D _FluidDensity;
+            // sampler2D _FluidDensity;
             float4 _UnderTargetColor;
             float4 _OverTargetColor;
             float4 _AroundTargetColor;
+            float _TargetValue;
 
  
             float Mod(float x, float y)
@@ -53,12 +56,23 @@ Shader "Viz Density"
                 return o;
             }
 
+            float3 getColorFromValue(float value, float targetValue, float3 underTargetColor, float3 aroundTargetColor, float3 overTargetColor) {
+                float transitionRange = 0.1; // Adjust this value to control the width of the transition range
+                
+                float underTargetFactor = smoothstep(targetValue - transitionRange, 0,  value);
+                float aroundTargetFactor = smoothstep(targetValue - transitionRange , 0, abs(value-targetValue));
+                float overTargetFactor = smoothstep(targetValue + transitionRange, targetValue * 2, value);
+                
+                return underTargetColor * underTargetFactor + aroundTargetFactor *_AroundTargetColor + overTargetFactor * overTargetColor;
+            }
             
             fixed4 frag(v2f i) : SV_Target
             {
-                float res = tex2Dlod(_FluidDensity, float4(i.uv,0,0)).r;
-                res = min(res,2);
-				return   lerp(1, 0, res) * _UnderTargetColor + lerp(1, 0, abs(res - 1)) * _AroundTargetColor + lerp(0,1, res - 1) * _OverTargetColor;
+                float value = _FluidDensity.Sample(sampler_point_clamp, float4(i.uv,0,0));
+                value = max(0,value);
+                float4 res = 1;
+                res.rgb = getColorFromValue(value,_TargetValue,_UnderTargetColor,_AroundTargetColor,_OverTargetColor); 
+				return res;
             }
  
             ENDCG
