@@ -12,12 +12,18 @@ StructuredBuffer<FluidParticlePhysics> _FluidParticleInit;
 RWStructuredBuffer<FluidParticleGraphics> _FluidParticleGraphics;
 RWStructuredBuffer<FluidParticlePhysics> _FluidParticlePhysics;
 
+Texture2D<float4> _FluidDensity;
+Texture2D<float4> _FluidGradient;
+
 [numthreads(tx,1,1)]
 void FluidSimulationCS (uint3 id : SV_DispatchThreadID)
 {
 	const uint idx = id.x;
 	float energyDumping = 0.9f;
 	if(idx > _CurrFluidParticleCount) return;
+
+	float density = _FluidDensity[_FluidParticlePhysics[idx].position.xy];
+	float2 gradient = _FluidGradient[_FluidParticlePhysics[idx].position.xy].xy;
 
 	float3 position = _FluidParticlePhysics[idx].position + _FluidParticlePhysics[idx].velocity * _Deltatime;
 	float3 velocity = _FluidParticlePhysics[idx].velocity + _FluidParticlePhysics[idx].acceleration * _Deltatime;

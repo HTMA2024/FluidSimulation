@@ -28,7 +28,7 @@ Shader "Draw Particles"
                 float2 uv : TEXCOORD0;
             };
             
-            float4 _Color;
+            float4 _ParticleColor;
             StructuredBuffer<FluidParticlePhysics> _ComputeBuffer;
             float _ParticleRadius;
  
@@ -57,7 +57,7 @@ Shader "Draw Particles"
                 float2 s = i.uv * 2.0 - 1.0;
                 float dis = abs(distance(s,0)) ;
                 clip(1 - dis);
-                return 1;
+                return _ParticleColor;
             }
  
             ENDCG

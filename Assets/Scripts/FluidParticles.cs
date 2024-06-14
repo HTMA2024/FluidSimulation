@@ -19,8 +19,8 @@ namespace FluidSimulation
         private static FluidParticlePhysics CreateParticle(Vector3 position)
         {
             var fluidParticle = new FluidParticlePhysics();
-            fluidParticle.acceleration = Vector3.Normalize(Vector3.one - 2.0f *new Vector3(Random.value, Random.value, 0));
-            fluidParticle.velocity = Vector3.Normalize(Vector3.one - 2.0f *new Vector3(Random.value, Random.value, 0));
+            fluidParticle.acceleration = Vector3.zero;
+            fluidParticle.velocity = Vector3.zero;
             fluidParticle.position = position;
             fluidParticle.position.z = 1; // Make it 2D
             return fluidParticle;
@@ -37,7 +37,7 @@ namespace FluidSimulation
         }
         
         
-        internal static void Add(Vector3 position, Color color)
+        internal static void Add(Vector3 position)
         {
             var fluidParticlesPhysicsNative = DensityFieldPass.BeginWriteBuffer<FluidParticlePhysics>(FluidComputeBufferType.Physics,FluidParticleCount,1);
             
@@ -86,6 +86,25 @@ namespace FluidSimulation
             
             AddMultiple(positions, count);
         }
+        
+        
+        internal static void FillScreenRandom(int count)
+        {
+            // var width =  (int) (pwidth / (float)density);
+            // var height = (int) (pheight / (float)density);
+            // var count = (int)(width + 1) * (int)(height + 1);
+
+            var positions = new Vector3[count];
+
+            for (int i = 0; i < positions.Length; i++)
+            {
+                var position = new Vector3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), 0);
+                positions[i] = position;
+            }
+            
+            AddMultiple(positions, count);
+        }
+
         
         public static void Clean()
         {
