@@ -83,11 +83,15 @@ Shader "Draw Pressure"
                 float dis = abs(distance(s,0));
                 float2 dir = dis <= 1e-5 ? GetRandomDir(_Time.y) : s/dis;
                 fixed slope = SmoothingKernelDerivative(1, dis);
+
+                float2 screenPosNorm = i.screenPos.xy/i.screenPos.w;
+                float densitySelf = _FluidDensity.Sample(sampler_point_clamp, float4(particleCenterPos.xy,0,0));
+                float densityOthers = _FluidDensity.Sample(sampler_point_clamp, float4(screenPosNorm.xy,0,0));
                 
-                float density = _FluidDensity.Sample(sampler_point_clamp, float4(particleCenterPos.xy,0,0));
-                
-                float2 gradient = -dir * slope * mass / max(density,1e-5);
-                float pressure = ConvertDensityToPressure(density, _TargetValue, _PressureMultiplier);
+                float2 gradient = -dir * slope * mass / max(densitySelf,1e-5);
+                float pressureSelf = ConvertDensityToPressure(densitySelf, _TargetValue, _PressureMultiplier);
+                float pressureOthers = ConvertDensityToPressure(densityOthers, _TargetValue, _PressureMultiplier);
+                float pressure = (pressureSelf + pressureOthers) / 2;
                 float2 pressureForce = pressure * gradient;
                 float4 res = dis <= 1e-5 ? 0.0 : float4(pressureForce,0,1);
 				return res;

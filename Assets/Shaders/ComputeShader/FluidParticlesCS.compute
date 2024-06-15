@@ -6,6 +6,7 @@
 
 #define tx 64
 
+float _ParticleSize;
 uint _PrevFluidParticleCount;
 uint _CurrFluidParticleCount;
 float _Deltatime;
@@ -41,36 +42,20 @@ void FluidSimulationCS (uint3 id : SV_DispatchThreadID)
 	// Update Position
 	float3 velocity = _FluidParticlePhysics[idx].velocity + acceleration * _Deltatime;
 	float3 position = _FluidParticlePhysics[idx].position + velocity * _Deltatime;
-	
-	if (position.x - 1 > -1e-5 || position.x + 1 < 1e-5)
-	{
-	    velocity.x *= -1;
-	}
-	if ( position.y - 1 > -1e-5 || position.y + 1 < 1e-5 )
-	{
-	    velocity.y *= -1;
-	}
-	
-	if (position.x - 1 > 1e-5)
-	{
-	    position.x = 1;
-	}
-	
-	if (position.x + 1 < 1e-5)
-	{
-	    position.x = -1;
-	}
-	
-	if (position.y - 1 > 1e-5)
-	{
-	    position.y = 1;
-	}
-	
-	if (position.y + 1 < 1e-5)
-	{
-	    position.y = -1;
-	}
 
+	float halfBoundSize = 1.f - _ParticleSize;
+	if(abs(position.x) > halfBoundSize)
+	{
+		position.x = halfBoundSize * sign(position.x);
+		velocity.x *= -1 * energyDumping;
+	}
+	
+	if(abs(position.y) > halfBoundSize)
+	{
+		position.y = halfBoundSize * sign(position.y);
+		velocity.y *= -1 * energyDumping;
+	}
+	
 	_FluidParticlePhysics[idx].position = position;
 	_FluidParticlePhysics[idx].velocity = velocity * energyDumping;
 }

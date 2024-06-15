@@ -27,17 +27,19 @@ struct FluidParticleGraphics
 
 float SmoothingKernel(float radius, float dst)
 {
-	float volume = UNITY_PI * pow(radius, 8) /4;
-	float value = max(0, radius * radius - dst * dst);
-	return value * value * value / volume;
+	if(dst >= radius) return 0;
+	
+	float volume = (UNITY_PI * pow(radius, 4.f)) /6.f;
+	float value = (radius - dst) * (radius - dst) / volume;
+	return value;
 }
 
 float SmoothingKernelDerivative(float radius, float dst)
 {
 	if(dst >= radius) return 0;
-	float f = radius * radius - dst * dst;
-	float scale = -24/(UNITY_PI * pow(radius,8));
-	return scale * dst * f * f;
+
+	float scale = 12 / (pow(radius,4.f) * UNITY_PI);
+	return (dst - radius) * scale;
 }
 
 float ConvertDensityToPressure(float density, float targetDensity, float pressureMultiplier)

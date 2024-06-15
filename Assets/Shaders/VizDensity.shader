@@ -63,7 +63,7 @@ Shader "Viz Density"
                 float aroundTargetFactor = smoothstep(targetValue - transitionRange , 0, abs(value-targetValue));
                 float overTargetFactor = smoothstep(targetValue + transitionRange, targetValue * 2, value);
                 
-                return underTargetColor * underTargetFactor + aroundTargetFactor *_AroundTargetColor + overTargetFactor * overTargetColor;
+                return underTargetColor * underTargetFactor + aroundTargetFactor * aroundTargetColor + overTargetFactor * overTargetColor;
             }
             
             fixed4 frag(v2f i) : SV_Target
