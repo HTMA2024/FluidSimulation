@@ -9,6 +9,7 @@ namespace FluidSimulation
 {
     public class FluidSimulator : MonoBehaviour
     {
+        [SerializeField] private int m_Pixel = 190;
         [SerializeField][Range(1e-3f,1)] private float m_ParticleRadius = 0.5f;
         [SerializeField][Range(1e-3f,1)] private float m_SmoothingRadius = 0.5f;
 
@@ -48,7 +49,7 @@ namespace FluidSimulation
         {
             if (FluidDensityFieldRendererFeature.passCreated)
             {
-                FluidDensityFieldRendererFeature.SetParticleParams(m_ParticleRadius, _particleColor, _energyDamping);
+                FluidDensityFieldRendererFeature.SetParticleParams(m_ParticleRadius, _particleColor, _energyDamping, m_Pixel);
                 FluidDensityFieldRendererFeature.SetDensityRadius(m_SmoothingRadius);
                 FluidDensityFieldRendererFeature.SetVizDensityParams(_overTargetCol, _underTargetCol,_aroundTargetCol, _targetDensity);
                 FluidDensityFieldRendererFeature.SetPressureParams(_targetDensity, _pressureMultiplier);

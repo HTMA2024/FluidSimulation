@@ -9,10 +9,9 @@
 float _ParticleSize;
 uint _PrevFluidParticleCount;
 uint _CurrFluidParticleCount;
-float _Deltatime;
+float _FluidDeltaTime;
 float _EnergyDumping;
 StructuredBuffer<FluidParticlePhysics> _FluidParticleInit;
-RWStructuredBuffer<FluidParticleGraphics> _FluidParticleGraphics;
 RWStructuredBuffer<FluidParticlePhysics> _FluidParticlePhysics;
 
 Texture2D<float> _FluidDensity;
@@ -28,21 +27,22 @@ void FluidSimulationCS (uint3 id : SV_DispatchThreadID)
 	if(idx > _CurrFluidParticleCount) return;
 
 	// Update Acceleration
-	float2 texUV = _FluidParticlePhysics[idx].position.xy * 0.5f + 0.5f;
-	texUV.y = 1 - texUV.y;
-	texUV.x *= _TexelSize.x;
-	texUV.y *= _TexelSize.y;
+	float2 uv = _FluidParticlePhysics[idx].position.xy * 0.5f + 0.5f;
+	uv.y = 1 - uv.y;
+	uv.x *= _TexelSize.x;
+	uv.y *= _TexelSize.y;
+	uint2 uvIndex = floor(uv);
 	
-	float density = _FluidDensity[texUV.xy];
-	float2 pressure = _FluidPressure[texUV.xy].xy;
+	float density = _FluidDensity[uvIndex.xy];
+	float2 pressure = _FluidPressure[uvIndex.xy].xy;
 	float3 acceleration = 0;
 	acceleration.xy = pressure/ max(density, 1e-5);
 	acceleration.y *= -1;
 	_FluidParticlePhysics[idx].acceleration = acceleration;
 	
 	// Update Position
-	float3 velocity = _FluidParticlePhysics[idx].velocity + acceleration * _Deltatime;
-	float3 position = _FluidParticlePhysics[idx].position + velocity * _Deltatime;
+	float3 velocity = _FluidParticlePhysics[idx].velocity + acceleration * _FluidDeltaTime;
+	float3 position = _FluidParticlePhysics[idx].position + velocity * _FluidDeltaTime;
 
 	float halfBoundSize = 1.f - _ParticleSize;
 	if(abs(position.x) > halfBoundSize)
@@ -57,6 +57,7 @@ void FluidSimulationCS (uint3 id : SV_DispatchThreadID)
 		velocity.y *= -1;
 	}
 	
+	_FluidParticlePhysics[idx].color = float4(pressure.xy,0,1);
 	_FluidParticlePhysics[idx].position = position;
 	_FluidParticlePhysics[idx].velocity = velocity * energyDumping;
 }
@@ -73,4 +74,5 @@ void InitCS (uint3 id : SV_DispatchThreadID)
 	_FluidParticlePhysics[idx].position = _FluidParticleInit[idx].position;
 	_FluidParticlePhysics[idx].velocity = _FluidParticleInit[idx].velocity;
 	_FluidParticlePhysics[idx].acceleration = _FluidParticleInit[idx].acceleration;
+	_FluidParticlePhysics[idx].color = _FluidParticleInit[idx].color;
 }
