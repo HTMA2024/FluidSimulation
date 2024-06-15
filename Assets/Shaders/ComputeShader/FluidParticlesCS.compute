@@ -10,6 +10,7 @@ float _ParticleSize;
 uint _PrevFluidParticleCount;
 uint _CurrFluidParticleCount;
 float _Deltatime;
+float _EnergyDumping;
 StructuredBuffer<FluidParticlePhysics> _FluidParticleInit;
 RWStructuredBuffer<FluidParticleGraphics> _FluidParticleGraphics;
 RWStructuredBuffer<FluidParticlePhysics> _FluidParticlePhysics;
@@ -23,7 +24,7 @@ float4 _TexelSize;
 void FluidSimulationCS (uint3 id : SV_DispatchThreadID)
 {
 	const uint idx = id.x;
-	float energyDumping = 0.98f;
+	float energyDumping = _EnergyDumping;
 	if(idx > _CurrFluidParticleCount) return;
 
 	// Update Acceleration
@@ -47,13 +48,13 @@ void FluidSimulationCS (uint3 id : SV_DispatchThreadID)
 	if(abs(position.x) > halfBoundSize)
 	{
 		position.x = halfBoundSize * sign(position.x);
-		velocity.x *= -1 * energyDumping;
+		velocity.x *= -1;
 	}
 	
 	if(abs(position.y) > halfBoundSize)
 	{
 		position.y = halfBoundSize * sign(position.y);
-		velocity.y *= -1 * energyDumping;
+		velocity.y *= -1;
 	}
 	
 	_FluidParticlePhysics[idx].position = position;

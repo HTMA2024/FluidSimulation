@@ -11,13 +11,14 @@ namespace FluidSimulation
     {
         [SerializeField][Range(1e-3f,1)] private float m_ParticleRadius = 0.5f;
         [SerializeField][Range(1e-3f,1)] private float m_SmoothingRadius = 0.5f;
-        
+
+        [SerializeField] [Range(0.8f, 1)] private float _energyDamping = 1;
         [SerializeField] private Color _particleColor;
         [SerializeField] private Color _underTargetCol;
         [SerializeField] private Color _overTargetCol;
         [SerializeField] private Color _aroundTargetCol;
         [SerializeField][Range(1e-3f,10)] private float _targetDensity = 1f;
-        [SerializeField][Range(1e-3f,1)] private float _pressureMultiplier = 1f;
+        [SerializeField][Range(1e-3f,10)] private float _pressureMultiplier = 1f;
         
         [SerializeField] private bool m_EnableUpdate = false;
         [SerializeField] private bool m_DrawDensityField = false;
@@ -47,7 +48,7 @@ namespace FluidSimulation
         {
             if (FluidDensityFieldRendererFeature.passCreated)
             {
-                FluidDensityFieldRendererFeature.SetParticleParams(m_ParticleRadius, _particleColor);
+                FluidDensityFieldRendererFeature.SetParticleParams(m_ParticleRadius, _particleColor, _energyDamping);
                 FluidDensityFieldRendererFeature.SetDensityRadius(m_SmoothingRadius);
                 FluidDensityFieldRendererFeature.SetVizDensityParams(_overTargetCol, _underTargetCol,_aroundTargetCol, _targetDensity);
                 FluidDensityFieldRendererFeature.SetPressureParams(_targetDensity, _pressureMultiplier);
@@ -77,6 +78,11 @@ namespace FluidSimulation
             FluidParticlePhysicsSystem.Clean();
         }
 
+        private void FillScreenCenter(int squareSize ,int density)
+        {
+            FluidParticlePhysicsSystem.FillScreenCenter(squareSize,m_Camera.pixelWidth, m_Camera.pixelHeight,density);
+        }
+        
         private void FillScreen(int density)
         {
             FluidParticlePhysicsSystem.FillScreen(m_Camera.pixelWidth,m_Camera.pixelHeight,density);
@@ -100,7 +106,8 @@ namespace FluidSimulation
         {
             private Vector2 m_ParticlePosition;
             private Color m_ParticleColor = Color.white;
-            private int m_Density = 100;
+            private int m_SquareSize = 500;
+            private int m_Density = 10;
             private int m_Count = 100;
             public override void OnInspectorGUI()
             {
@@ -145,6 +152,7 @@ namespace FluidSimulation
                 }
                 GUILayout.EndHorizontal();
                 
+                
                 GUILayout.Space(10);  
                 GUILayout.BeginHorizontal();
                 m_Count = EditorGUILayout.IntField("Count", m_Count);
@@ -158,11 +166,14 @@ namespace FluidSimulation
                 
                 GUILayout.Space(10);  
                 GUILayout.BeginHorizontal();
-                if (GUILayout.Button("Update A Frame"))
+                m_SquareSize = EditorGUILayout.IntField("SquareSize", m_SquareSize);
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button("Fill Screen Center", GUILayout.Width(200)))
                 {
-                    // FluidParticlePhysicsSystem.Update(1);
+                    t.FillScreenCenter(m_SquareSize, m_Density);
                 }
                 GUILayout.EndHorizontal();
+                
                 
                 EditorGUILayout.EndVertical();
                 

@@ -23,6 +23,7 @@ namespace FluidSimulation
 
         private static Color _pColor;
         private static float _pRadius;
+        private static float _energyDamping;
         private static float _dRadius;
         private static Color _underTargetCol;
         private static Color _overTargetCol;
@@ -56,10 +57,11 @@ namespace FluidSimulation
 
         #region Helpers
 
-        internal static void SetParticleParams(float radius, Color color)
+        internal static void SetParticleParams(float radius, Color color, float energyDamping)
         {
             _pColor = color;
             _pRadius = radius;
+            _energyDamping = energyDamping;
         }
         internal static void SetDensityRadius(float radius)
         {
@@ -261,7 +263,6 @@ namespace FluidSimulation
                 _pressureMaterial.SetFloat("_PressureMultiplier", _pressureMultiplier);
     
                 
-                
                 // Draw Density
                 CreateRenderTexture("RTDensity", RenderTextureFormat.RFloat, ref _textureDescriptor, in renderingData, ref m_RTHandleDensity);
                 cmd.SetRenderTarget(m_RTHandleDensity,RenderBufferLoadAction.DontCare,RenderBufferStoreAction.DontCare);
@@ -285,12 +286,12 @@ namespace FluidSimulation
                 }
                 
                 // Draw Gradient Field
-                CreateRenderTexture("RTGradient",RenderTextureFormat.ARGBFloat,ref _textureDescriptor, in renderingData, ref m_RTHandleGradient);
-                cmd.SetRenderTarget(m_RTHandleGradient, RenderBufferLoadAction.DontCare,RenderBufferStoreAction.DontCare );
-                cmd.ClearRenderTarget(true, true, Color.black);
-                cmd.DrawMeshInstancedIndirect(_mesh, 0, _gradientMaterial, 0, _argsBuffer);
                 if (drawGradientField)
                 {
+                    CreateRenderTexture("RTGradient",RenderTextureFormat.ARGBFloat,ref _textureDescriptor, in renderingData, ref m_RTHandleGradient);
+                    cmd.SetRenderTarget(m_RTHandleGradient, RenderBufferLoadAction.DontCare,RenderBufferStoreAction.DontCare );
+                    cmd.ClearRenderTarget(true, true, Color.black);
+                    cmd.DrawMeshInstancedIndirect(_mesh, 0, _gradientMaterial, 0, _argsBuffer);
                     Blitter.BlitCameraTexture(cmd, m_RTHandleGradient, m_CameraColorTarget, 0);
                 }
                 
@@ -308,6 +309,7 @@ namespace FluidSimulation
                 // Compute Physics
                 if (enableUpdate)
                 {
+                    cmd.SetComputeFloatParam(_computeShader,"_EnergyDumping", _energyDamping);
                     cmd.SetComputeFloatParam(_computeShader,"_ParticleSize", _pRadius);
                     cmd.SetComputeFloatParam(_computeShader,"_Deltatime", Time.deltaTime);
                     cmd.SetComputeVectorParam(_computeShader, "_TexelSize", new Vector4( m_RTHandleDensity.rt.width,  m_RTHandleDensity.rt.height, 0, 0));
