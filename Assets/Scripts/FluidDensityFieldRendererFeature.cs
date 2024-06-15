@@ -308,6 +308,7 @@ namespace FluidSimulation
                 // Compute Physics
                 if (enableUpdate)
                 {
+                    cmd.SetComputeFloatParam(_computeShader,"_ParticleSize", _pRadius);
                     cmd.SetComputeFloatParam(_computeShader,"_Deltatime", Time.deltaTime);
                     cmd.SetComputeVectorParam(_computeShader, "_TexelSize", new Vector4( m_RTHandleDensity.rt.width,  m_RTHandleDensity.rt.height, 0, 0));
                     cmd.SetComputeTextureParam(_computeShader, _computeKernel, "_FluidDensity", m_RTHandleDensity);
@@ -396,7 +397,7 @@ namespace FluidSimulation
                     rtName
                 );
             } 
-            else if (rtHandle.rt.width != rtTextureDescriptor.width || rtHandle.rt.height != rtTextureDescriptor.height)
+            else if (rtHandle.rt!=null && (rtHandle.rt.width != rtTextureDescriptor.width || rtHandle.rt.height != rtTextureDescriptor.height) )
             {
                 rtHandle.Release();
                 rtHandle = RTHandles.Alloc(
