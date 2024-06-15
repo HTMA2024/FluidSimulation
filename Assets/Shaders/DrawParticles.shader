@@ -58,7 +58,7 @@ Shader "Draw Particles"
                 float2 s = i.uv * 2.0 - 1.0;
                 float dis = abs(distance(s,0)) ;
                 clip(1 - dis);
-                float4 res = dis < 1.f/(_Pixel * _ParticleRadius) ? 0.0 : _ParticleColor;
+                float4 res = _ParticleColor;
                 return res;
             }
  

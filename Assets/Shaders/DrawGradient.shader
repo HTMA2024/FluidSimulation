@@ -75,7 +75,7 @@ Shader "Draw Gradient"
                 // float density = tex2Dlod(_FluidDensity, float4(screenPosNorm.xy,0,0)); // SamplePoint Density
                 float density = _FluidDensity.Sample(sampler_point_clamp, float4(particleCenterPos.xy,0,0));
 
-                float2 gradient = density <  1.f/(_Pixel * _SmoothRadius) ? 0 : dir * slope * mass / density;
+                float2 gradient = density <  1e-5 ? 0 : dir * slope * mass / density;
                 
 				return float4(gradient.xy ,0,1);
             }
