@@ -23,6 +23,7 @@ namespace FluidSimulation
             fluidParticle.velocity = Vector3.zero;
             fluidParticle.position = position;
             fluidParticle.position.z = 1; // Make it 2D
+            fluidParticle.color = Vector4.zero;
             return fluidParticle;
         }
 
@@ -32,7 +33,7 @@ namespace FluidSimulation
             fluidParticle.velocity = Vector3.zero;
             fluidParticle.position = Vector3.zero;
             fluidParticle.position.z = 0; // Make it 2D
-            // fluidParticle.color = Vector3.zero;
+            fluidParticle.color = Vector4.zero;
             return fluidParticle;
         }
         
@@ -69,13 +70,13 @@ namespace FluidSimulation
         {
             var width =  (int) (pwidth / (float)density);
             var height = (int) (pheight / (float)density);
-            var count = (int)(width + 1) * (int)(height + 1);
+            var count = (int)(width + 1 ) * (int)(height + 1 );
 
             var positions = new Vector3[count];
             
-            for (int i = 0; i <= width; i++)
+            for (int i = 0; i < width + 1; i++)
             {
-                for (int j = 0; j <= height; j++)
+                for (int j = 0; j < height + 1; j++)
                 {
                     Vector3 position = new Vector3((float)i/width, (float)j/height);
                     position = position * 2 - Vector3.one;
@@ -89,19 +90,19 @@ namespace FluidSimulation
         internal static void FillScreenCenter(float squareSize, float screenWidth, float screenHeight, float density)
         {
             var width =  (int) (squareSize / (float)density);
-            var count = (int)(width + 1) * (int)(width + 1);
+            var count = (int)(width ) * (int)(width);
 
             var positions = new Vector3[count];
             
-            for (int i = 0; i <= width; i++)
+            for (int i = 0; i < width; i++)
             {
-                for (int j = 0; j <= width; j++)
+                for (int j = 0; j < width; j++)
                 {
                     Vector3 position = new Vector3((float)i/width, (float)j/width);
                     position = position * 2 - Vector3.one;
                     position.x *= squareSize / screenWidth;
                     position.y *= squareSize / screenHeight;
-                    var index = (int)(i * (width + 1) + j);
+                    var index = (int)(i * (width ) + j);
                     positions[index] = position;
                 }
             }

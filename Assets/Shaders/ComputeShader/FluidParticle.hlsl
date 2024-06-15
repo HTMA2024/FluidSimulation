@@ -16,12 +16,7 @@ struct FluidParticlePhysics
 	float3 position;
 	float3 velocity;
 	float3 acceleration;
-};
-
-struct FluidParticleGraphics
-{
-	float3 position;
-	// float3 color;
+	float4 color;
 };
 
 
@@ -47,7 +42,6 @@ float ConvertDensityToPressure(float density, float targetDensity, float pressur
 	float densityError = density - targetDensity;
 	float pressure = densityError * pressureMultiplier; 
 	return pressure;
-	
 }
 
 #endif // UNITY_CG_INCLUDED

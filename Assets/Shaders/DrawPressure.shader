@@ -39,6 +39,7 @@ Shader "Draw Pressure"
             SamplerState sampler_point_clamp;
             float _TargetValue;
             float _PressureMultiplier;
+            float _Pixel;
 
  
             float Mod(float x, float y)
@@ -50,7 +51,7 @@ Shader "Draw Pressure"
                 v2f o;
 
                 float4 pos = i.vertex ;
-                pos *= _SmoothRadius * 2;
+                pos *= _SmoothRadius;
                 pos.z = 1;
                 o.vertex = UnityObjectToClipPos(pos);
                 o.vertex.xy += _ComputeBuffer[instanceID].position.xy;
@@ -88,12 +89,12 @@ Shader "Draw Pressure"
                 float densitySelf = _FluidDensity.Sample(sampler_point_clamp, float4(particleCenterPos.xy,0,0));
                 float densityOthers = _FluidDensity.Sample(sampler_point_clamp, float4(screenPosNorm.xy,0,0));
                 
-                float2 gradient = -dir * slope * mass / max(densitySelf,1e-5);
+                float2 gradient = densitySelf < 1e-5 ? 0 :  -dir * slope * mass / max(densitySelf,1e-5);
                 float pressureSelf = ConvertDensityToPressure(densitySelf, _TargetValue, _PressureMultiplier);
                 float pressureOthers = ConvertDensityToPressure(densityOthers, _TargetValue, _PressureMultiplier);
                 float pressure = (pressureSelf + pressureOthers) / 2;
                 float2 pressureForce = pressure * gradient;
-                float4 res = dis <= 1e-5 ? 0.0 : float4(pressureForce,0,1);
+                float4 res = dis < 1.f/(_Pixel * _SmoothRadius) ? 0.0 : float4(pressureForce,0,1);
 				return res;
             }
  

@@ -22,6 +22,7 @@ namespace FluidSimulation
         }
 
         private static Color _pColor;
+        private static float _pPixel;
         private static float _pRadius;
         private static float _energyDamping;
         private static float _dRadius;
@@ -57,8 +58,9 @@ namespace FluidSimulation
 
         #region Helpers
 
-        internal static void SetParticleParams(float radius, Color color, float energyDamping)
+        internal static void SetParticleParams(float radius, Color color, float energyDamping, float pixel)
         {
+            _pPixel = pixel;
             _pColor = color;
             _pRadius = radius;
             _energyDamping = energyDamping;
@@ -250,6 +252,7 @@ namespace FluidSimulation
                 if (FluidParticleCount == 0) return;
             
                 _particleMaterial.SetColor("_ParticleColor", _pColor);
+                _particleMaterial.SetFloat("_Pixel", _pPixel);
                 _particleMaterial.SetFloat("_ParticleRadius", _pRadius);
                 _densityMaterial.SetFloat("_SmoothRadius", _dRadius);
                 _gradientMaterial.SetFloat("_SmoothRadius", _dRadius);
@@ -261,11 +264,14 @@ namespace FluidSimulation
                 _pressureMaterial.SetFloat("_SmoothRadius", _dRadius);
                 _pressureMaterial.SetFloat("_TargetValue", _targetValue);
                 _pressureMaterial.SetFloat("_PressureMultiplier", _pressureMultiplier);
-    
+                _particleMaterial.SetFloat("_Pixel", _pPixel);
+                _particleMaterial.SetFloat("_ParticleRadius", _pRadius);
+                
                 
                 // Draw Density
                 CreateRenderTexture("RTDensity", RenderTextureFormat.RFloat, ref _textureDescriptor, in renderingData, ref m_RTHandleDensity);
                 cmd.SetRenderTarget(m_RTHandleDensity,RenderBufferLoadAction.DontCare,RenderBufferStoreAction.DontCare);
+                cmd.SetGlobalFloat("_FluidDeltaTime", Time.deltaTime);
                 cmd.ClearRenderTarget(true, true, Color.black);
                 cmd.DrawMeshInstancedIndirect(_mesh, 0, _densityMaterial, 0, _argsBuffer);
                 cmd.SetGlobalTexture("_FluidDensity", m_RTHandleDensity);
@@ -281,7 +287,6 @@ namespace FluidSimulation
                     cmd.SetRenderTarget(m_RTHandleVizDensity,RenderBufferLoadAction.DontCare,RenderBufferStoreAction.DontCare);
                     cmd.ClearRenderTarget(true, true, Color.black);
                     cmd.Blit(m_RTHandleDensity, m_RTHandleVizDensity, _vizDensityMaterial,0);
-                
                     Blitter.BlitCameraTexture(cmd, m_RTHandleVizDensity, m_CameraColorTarget, 0);
                 }
                 
@@ -296,7 +301,6 @@ namespace FluidSimulation
                 }
                 
                 // Draw Pressure Field
-                
                 CreateRenderTexture("RTPressure",RenderTextureFormat.ARGBFloat,ref _textureDescriptor, in renderingData, ref m_RTHandlePressure);
                 cmd.SetRenderTarget(m_RTHandlePressure, RenderBufferLoadAction.DontCare,RenderBufferStoreAction.DontCare );
                 cmd.ClearRenderTarget(true, true, Color.black);
@@ -318,10 +322,9 @@ namespace FluidSimulation
                     cmd.DispatchCompute(_computeShader,_computeKernel, Mathf.CeilToInt(FluidParticleCount / 64.0f),1,1 );
                 }
 
+                // Draw Particles
                 if (drawParticles)
                 {
-                    // Draw Particles
-                    // CreateRenderTexture("RTParticles",ref _textureDescriptor, ref renderingData, ref m_RTHandleParticle);
                     cmd.SetRenderTarget(m_CameraColorTarget);
                     cmd.DrawMeshInstancedIndirect(_mesh, 0, _particleMaterial, 0, _argsBuffer);
                 }

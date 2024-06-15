@@ -21,6 +21,7 @@ namespace FluidSimulation
         public Vector3 position;
         public Vector3 velocity;
         public Vector3 acceleration;
+        public Vector4 color;
     }
 
     public struct FluidParticleGraphics

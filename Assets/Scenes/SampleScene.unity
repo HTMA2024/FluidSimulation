@@ -456,19 +456,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 049dbc9e5c3c6024b91a90da6ae0b844, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_ParticleRadius: 0.01
-  m_SmoothingRadius: 0.2
+  m_ParticleRadius: 0.005
+  m_SmoothingRadius: 0.3
+  _energyDamping: 1
   _particleColor: {r: 1, g: 1, b: 1, a: 0}
   _underTargetCol: {r: 0.27987415, g: 0.7378853, b: 1, a: 0}
   _overTargetCol: {r: 1, g: 0.36163503, b: 0.36163503, a: 0}
   _aroundTargetCol: {r: 1, g: 1, b: 1, a: 0}
   _targetDensity: 1
-  _pressureMultiplier: 0.1
+  _pressureMultiplier: 1
   m_EnableUpdate: 0
   m_DrawDensityField: 0
   m_DrawVizDensityMap: 0
   m_DrawGradientField: 0
   m_DrawPressureField: 0
+  m_DrawParticles: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

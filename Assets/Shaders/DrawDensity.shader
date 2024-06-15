@@ -32,6 +32,7 @@ Shader "Draw Density"
             };
 
             StructuredBuffer<FluidParticlePhysics> _ComputeBuffer;
+            float _FluidDeltaTime;
             float _SmoothRadius;
 
  
@@ -47,7 +48,7 @@ Shader "Draw Density"
                 pos *= _SmoothRadius * 2;
                 pos.z = 1;
                 o.vertex = UnityObjectToClipPos(pos);
-                o.vertex.xy += _ComputeBuffer[instanceID].position.xy;
+                o.vertex.xy += _ComputeBuffer[instanceID].position.xy + _ComputeBuffer[instanceID].velocity.xy *_FluidDeltaTime;
                 // o.color = float4(_ComputeBuffer[instanceID].color,1);
                 o.uv = i.uv;
 
