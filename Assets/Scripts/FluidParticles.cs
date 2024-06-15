@@ -83,10 +83,30 @@ namespace FluidSimulation
                     positions[index] = position;
                 }
             }
-            
             AddMultiple(positions, count);
         }
         
+        internal static void FillScreenCenter(float squareSize, float screenWidth, float screenHeight, float density)
+        {
+            var width =  (int) (squareSize / (float)density);
+            var count = (int)(width + 1) * (int)(width + 1);
+
+            var positions = new Vector3[count];
+            
+            for (int i = 0; i <= width; i++)
+            {
+                for (int j = 0; j <= width; j++)
+                {
+                    Vector3 position = new Vector3((float)i/width, (float)j/width);
+                    position = position * 2 - Vector3.one;
+                    position.x *= squareSize / screenWidth;
+                    position.y *= squareSize / screenHeight;
+                    var index = (int)(i * (width + 1) + j);
+                    positions[index] = position;
+                }
+            }
+            AddMultiple(positions, count);
+        }
         
         internal static void FillScreenRandom(int count)
         {
