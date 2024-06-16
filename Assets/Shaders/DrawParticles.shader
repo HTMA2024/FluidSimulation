@@ -31,6 +31,7 @@ Shader "Draw Particles"
             StructuredBuffer<FluidParticlePhysics> _ComputeBuffer;
             float _ParticleRadius;
             float _Pixel;
+            float4 _TexelSize;
  
             float Mod(float x, float y)
             {
@@ -41,9 +42,10 @@ Shader "Draw Particles"
                 v2f o;
 
                 float4 pos = i.vertex ;
-                pos *= _ParticleRadius;
+                pos.xy *= _ParticleRadius * 2.f;
                 pos.z = 1;
-                o.vertex = UnityObjectToClipPos(pos);
+                pos.x *= _TexelSize.y/_TexelSize.x;
+                o.vertex = pos;
                 o.vertex.xy += _ComputeBuffer[instanceID].position.xy;
                 o.color = _ComputeBuffer[instanceID].color;
                 // o.color = float4(_ComputeBuffer[instanceID].color,1);
@@ -57,9 +59,9 @@ Shader "Draw Particles"
             {
                 float2 s = i.uv * 2.0 - 1.0;
                 float dis = abs(distance(s,0)) ;
-                clip(1 - dis);
+                // clip(1 - dis);
                 float4 res = _ParticleColor;
-                return res;
+                return float4(i.uv,0,1);
             }
  
             ENDCG

@@ -40,6 +40,7 @@ Shader "Draw Pressure"
             float _TargetValue;
             float _PressureMultiplier;
             float _Pixel;
+            float4 _TexelSize;
 
  
             float Mod(float x, float y)
@@ -51,9 +52,10 @@ Shader "Draw Pressure"
                 v2f o;
 
                 float4 pos = i.vertex ;
-                pos *= _SmoothRadius;
+                pos.xy *= _SmoothRadius * 2.f;
                 pos.z = 1;
-                o.vertex = UnityObjectToClipPos(pos);
+                pos.x *= _TexelSize.y/_TexelSize.x;
+                o.vertex = pos;
                 o.vertex.xy += _ComputeBuffer[instanceID].position.xy;
                 o.screenPos = ComputeScreenPos(o.vertex);
                 o.particleCenterPos = float4(_ComputeBuffer[instanceID].position.xy,0,0);
@@ -81,6 +83,7 @@ Shader "Draw Pressure"
                 
                 float mass = 1;
                 float2 s = i.uv * 2.0 - 1.0;
+                s.y *= -1;
                 float dis = abs(distance(s,0));
                 float2 dir = dis <= 1e-5 ? GetRandomDir(_Time.y) : s/dis;
                 fixed slope = SmoothingKernelDerivative(1, dis);
@@ -89,7 +92,7 @@ Shader "Draw Pressure"
                 float densitySelf = _FluidDensity.Sample(sampler_point_clamp, float4(particleCenterPos.xy,0,0));
                 float densityOthers = _FluidDensity.Sample(sampler_point_clamp, float4(screenPosNorm.xy,0,0));
                 
-                float2 gradient = densitySelf < 1e-5 ? 0 :  -dir * slope * mass / max(densitySelf,1e-5);
+                float2 gradient = densitySelf < 1e-5 ? 0 : -dir * slope * mass / max(densitySelf,1e-5);
                 float pressureSelf = ConvertDensityToPressure(densitySelf, _TargetValue, _PressureMultiplier);
                 float pressureOthers = ConvertDensityToPressure(densityOthers, _TargetValue, _PressureMultiplier);
                 float pressure = (pressureSelf + pressureOthers) / 2;

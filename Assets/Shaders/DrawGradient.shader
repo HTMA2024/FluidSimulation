@@ -38,6 +38,7 @@ Shader "Draw Gradient"
             UNITY_DECLARE_TEX2D(_FluidDensity);
             SamplerState sampler_point_clamp;
             float _Pixel;
+            float4 _TexelSize;
 
  
             float Mod(float x, float y)
@@ -49,9 +50,10 @@ Shader "Draw Gradient"
                 v2f o;
 
                 float4 pos = i.vertex ;
-                pos *= _SmoothRadius * 2;
+                pos.xy *= _SmoothRadius * 2.f;
                 pos.z = 1;
-                o.vertex = UnityObjectToClipPos(pos);
+                pos.x *= _TexelSize.y/_TexelSize.x;
+                o.vertex = pos;
                 o.vertex.xy += _ComputeBuffer[instanceID].position.xy;
                 o.screenPos = ComputeScreenPos(o.vertex);
                 o.particleCenterPos = float4(_ComputeBuffer[instanceID].position.xy,0,0);
@@ -61,23 +63,25 @@ Shader "Draw Gradient"
             }
 
             
-            fixed4 frag(v2f i) : SV_Target {
-
-                float mass = 1;
-                float2 s = i.uv * 2.0 - 1.0;
-                float dis = abs(distance(s,0));
-                float2 dir = -s/dis;
-                fixed slope = SmoothingKernelDerivative(1, dis);
-
+            fixed4 frag(v2f i) : SV_Target
+            {
 				float4 particleCenterPos = i.particleCenterPos * 0.5 + 0.5;
                 particleCenterPos.y = 1 - particleCenterPos.y;
+                
+                float mass = 1;
+                float2 s = i.uv * 2.0 - 1.0;
+                s.y *= -1;
+                float dis = abs(distance(s,0));
+                float2 dir = s/dis;
+                fixed slope = SmoothingKernelDerivative(1, dis);
+
                 
                 // float density = tex2Dlod(_FluidDensity, float4(screenPosNorm.xy,0,0)); // SamplePoint Density
                 float density = _FluidDensity.Sample(sampler_point_clamp, float4(particleCenterPos.xy,0,0));
 
                 float2 gradient = density <  1e-5 ? 0 : dir * slope * mass / density;
                 
-				return float4(gradient.xy ,0,1);
+				return float4(s.xy ,0,1);
             }
  
             ENDCG
