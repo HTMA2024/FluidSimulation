@@ -467,7 +467,7 @@ MonoBehaviour:
   _targetDensity: 10
   _pressureMultiplier: 1
   m_EnableUpdate: 0
-  m_DrawDensityField: 0
+  m_DrawDensityField: 1
   m_DrawVizDensityMap: 0
   m_DrawGradientField: 0
   m_DrawPressureField: 0

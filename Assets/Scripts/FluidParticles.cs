@@ -16,7 +16,7 @@ namespace FluidSimulation
             SetParticleCount(0);
         }
 
-        private static FluidParticlePhysics CreateParticle(Vector3 position)
+        private static FluidParticlePhysics CreateParticle(Vector3 position, int index)
         {
             var fluidParticle = new FluidParticlePhysics();
             fluidParticle.acceleration = Vector3.zero;
@@ -24,6 +24,8 @@ namespace FluidSimulation
             fluidParticle.position = position;
             fluidParticle.position.z = 1; // Make it 2D
             fluidParticle.color = Vector4.one;
+            fluidParticle.index = index;
+            fluidParticle.gridID = -1;
             return fluidParticle;
         }
 
@@ -34,6 +36,8 @@ namespace FluidSimulation
             fluidParticle.position = Vector3.zero;
             fluidParticle.position.z = 0; // Make it 2D
             fluidParticle.color = Vector4.zero;
+            fluidParticle.index = -1;
+            fluidParticle.gridID = -1;
             return fluidParticle;
         }
         
@@ -43,7 +47,7 @@ namespace FluidSimulation
             var fluidParticlesPhysicsNative = DensityFieldPass.BeginWriteBuffer<FluidParticlePhysics>(FluidComputeBufferType.Physics,FluidParticleCount,1);
             
             var fluidParticle = fluidParticlesPhysicsNative[0];
-            var particle = CreateParticle(position);
+            var particle = CreateParticle(position, FluidParticleCount);
             fluidParticle = particle;
             fluidParticlesPhysicsNative[0] = fluidParticle;
             
@@ -54,11 +58,11 @@ namespace FluidSimulation
         internal static void AddMultiple(Vector3[] positions, int count)
         {
             
-            var fluidParticlesPhysicsNative = DensityFieldPass.BeginWriteBuffer<FluidParticlePhysics>(FluidComputeBufferType.Physics, FluidParticleCount,count);
+            var fluidParticlesPhysicsNative = DensityFieldPass.BeginWriteBuffer<FluidParticlePhysics>(FluidComputeBufferType.Physics, FluidParticleCount, count);
             for (int i = 0; i < count; i++)
             {
                 var fluidParticle = fluidParticlesPhysicsNative[i];
-                var particle = CreateParticle(positions[i]);
+                var particle = CreateParticle(positions[i], FluidParticleCount + i);
                 fluidParticle = particle;
                 fluidParticlesPhysicsNative[i] = fluidParticle;
             }
