@@ -45,4 +45,12 @@ float ConvertDensityToPressure(float density, float targetDensity, float pressur
 	return pressure;
 }
 
+float hashwithoutsine11(float p)
+{
+	p = frac(p * .1031);
+	p *= p + 33.33;
+	p *= p + p;
+	return frac(p);
+}
+
 #endif // UNITY_CG_INCLUDED
