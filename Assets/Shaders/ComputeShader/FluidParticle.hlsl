@@ -13,6 +13,7 @@
 struct FluidParticlePhysics
 {
 	int index;
+	int gridID;
 	float3 position;
 	float3 velocity;
 	float3 acceleration;

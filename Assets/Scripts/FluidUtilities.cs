@@ -18,6 +18,7 @@ namespace FluidSimulation
     public struct FluidParticlePhysics
     {
         public int index;
+        public int gridID;
         public Vector3 position;
         public Vector3 velocity;
         public Vector3 acceleration;

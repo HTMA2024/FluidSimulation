@@ -34,6 +34,7 @@ Shader "Draw Grid"
             float _FluidDeltaTime;
             float _SmoothRadius;
             float4 _TexelSize;
+            int _FluidParticleCount;
 
  
             float Mod(float x, float y)
@@ -54,12 +55,34 @@ Shader "Draw Grid"
             
             float4 frag(v2f i) : SV_Target
             {
-                float2 pixelUV = i.uv ;
-                float2 grid = frac(pixelUV / _SmoothRadius);
-                grid = 1-smoothstep(0.05,0.1,sin(grid*UNITY_PI));
-                float gridStroke = saturate(grid.x + grid.y);
+                float2 scaledPixelUV = 1;
+
+                float yCount = floor(1 / _SmoothRadius);
+                float xCount = floor((_TexelSize.x / _TexelSize.y) / _SmoothRadius);
+
+                scaledPixelUV.x = (xCount * i.uv.x );
+                scaledPixelUV.y = (yCount * i.uv.y);
                 
-                return 0;
+                float2 grid = frac(scaledPixelUV);
+                int id = floor(floor(scaledPixelUV.x) + floor(scaledPixelUV.y) * (xCount+1));
+                
+                grid.y = 1 - smoothstep(0.01,0.05,sin(grid.y*UNITY_PI));
+                grid.x = 1 - smoothstep(0.01,0.05,sin(grid.x*UNITY_PI)) ;
+                float gridStroke = saturate(grid.x + grid.y);
+
+                int pID = -1;
+                for(int j = 0; j < _FluidParticleCount; j++)
+                {
+                    if(_ComputeBuffer[j].gridID == id)
+                    {
+                        return  1;
+                    }
+                }
+
+                // float output = pID == id ? 1 : gridStroke;
+                // float idListDisplay = id/((xCount+1)*(yCount+1));
+                // return idListDisplay;
+                return gridStroke;
             }
  
             ENDCG

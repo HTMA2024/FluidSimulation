@@ -1,16 +1,19 @@
 #pragma kernel FluidSimulationCS
 #pragma kernel InitCS
+#pragma kernel FluidBuildGridCS
 
 #include "FluidParticle.hlsl"
-            #include "UnityCG.cginc"
 
 #define tx 64
 
-float _ParticleSize;
-uint _PrevFluidParticleCount;
-uint _CurrFluidParticleCount;
+int _FluidParticleCount;
+float _ParticleRadius;
 float _FluidDeltaTime;
 float _EnergyDumping;
+float _SmoothRadius;
+
+uint _PrevFluidParticleCount;
+uint _CurrFluidParticleCount;
 StructuredBuffer<FluidParticlePhysics> _FluidParticleInit;
 RWStructuredBuffer<FluidParticlePhysics> _FluidParticlePhysics;
 
@@ -18,14 +21,30 @@ Texture2D<float> _FluidDensity;
 Texture2D<float4> _FluidPressure;
 float4 _TexelSize;
 
+[numthreads(tx,1,1)]
+void FluidBuildGridCS (uint3 id : SV_DispatchThreadID)
+{
+	const uint idx = id.x;
+	if(idx > _FluidParticleCount) return;
+
+	float yCount = floor(1 / _SmoothRadius);
+	float xCount = floor((_TexelSize.x / _TexelSize.y) / _SmoothRadius);
+	
+	float2 particlePos = _FluidParticlePhysics[idx].position.xy * 0.5 + 0.5;
+	particlePos.y = 1 -  particlePos.y;
+	int pGridIDX = floor(particlePos.x * xCount);
+	int pGridIDY = floor(particlePos.y * yCount);
+	int gID = floor(pGridIDX + pGridIDY * (xCount+1));
+
+	_FluidParticlePhysics[idx].gridID = gID;
+}
 
 [numthreads(tx,1,1)]
 void FluidSimulationCS (uint3 id : SV_DispatchThreadID)
 {
 	const uint idx = id.x;
-	float energyDumping = _EnergyDumping;
-	if(idx > _CurrFluidParticleCount) return;
-
+	if(idx > _FluidParticleCount) return;
+	
 	// Update Acceleration
 	float2 uv = _FluidParticlePhysics[idx].position.xy * 0.5f + 0.5f;
 	uv.y = 1 - uv.y;
@@ -44,7 +63,7 @@ void FluidSimulationCS (uint3 id : SV_DispatchThreadID)
 	float3 velocity = _FluidParticlePhysics[idx].velocity + acceleration * _FluidDeltaTime;
 	float3 position = _FluidParticlePhysics[idx].position + velocity * _FluidDeltaTime;
 
-	float halfBoundSize = 1.f - _ParticleSize;
+	float halfBoundSize = 1.f - _ParticleRadius;
 	if(abs(position.x) > halfBoundSize)
 	{
 		position.x = halfBoundSize * sign(position.x);
@@ -59,7 +78,7 @@ void FluidSimulationCS (uint3 id : SV_DispatchThreadID)
 	
 	_FluidParticlePhysics[idx].color = float4(pressure.xy,0,1);
 	_FluidParticlePhysics[idx].position = position;
-	_FluidParticlePhysics[idx].velocity = velocity * energyDumping;
+	_FluidParticlePhysics[idx].velocity = velocity * _EnergyDumping;
 }
 
 

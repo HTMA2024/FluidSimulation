@@ -59,9 +59,9 @@ Shader "Draw Particles"
             {
                 float2 s = i.uv * 2.0 - 1.0;
                 float dis = abs(distance(s,0)) ;
-                // clip(1 - dis);
+                clip(1 - dis);
                 float4 res = _ParticleColor;
-                return float4(i.uv,0,1);
+                return res;
             }
  
             ENDCG

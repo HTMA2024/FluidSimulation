@@ -81,7 +81,7 @@ Shader "Draw Gradient"
 
                 float2 gradient = density <  1e-5 ? 0 : dir * slope * mass / density;
                 
-				return float4(s.xy ,0,1);
+				return float4(gradient ,0,1);
             }
  
             ENDCG
