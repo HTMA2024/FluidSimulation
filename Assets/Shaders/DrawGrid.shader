@@ -1,4 +1,4 @@
-Shader "Draw Density"
+Shader "Draw Grid"
 {
     Properties{
     }
@@ -10,7 +10,6 @@ Shader "Draw Density"
             Tags { "Queue" = "Transparent" }
             
             Cull Off
-            Blend One One
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
@@ -46,27 +45,21 @@ Shader "Draw Density"
                 v2f o;
 
                 float4 pos = i.vertex ;
-                pos.xy *= _SmoothRadius * 2.f;
-                pos.z = 1;
-                pos.x *= _TexelSize.y/_TexelSize.x;
-                o.vertex = pos;
-                o.vertex.xy += _ComputeBuffer[instanceID].position.xy + _ComputeBuffer[instanceID].velocity.xy *_FluidDeltaTime;
-                // o.color = float4(_ComputeBuffer[instanceID].color,1);
+                o.vertex = UnityObjectToClipPos(pos);
                 o.uv = i.uv;
 
                 return o;
             }
 
             
-            float4 frag(v2f i) : SV_Target {
+            float4 frag(v2f i) : SV_Target
+            {
+                float2 pixelUV = i.uv ;
+                float2 grid = frac(pixelUV / _SmoothRadius);
+                grid = 1-smoothstep(0.05,0.1,sin(grid*UNITY_PI));
+                float gridStroke = saturate(grid.x + grid.y);
                 
-                float mass = 1;
-                float2 s = i.uv * 2.0 - 1.0;
-                float dis = abs(distance(s,0));
-                // fixed4 res = max(0, 1 - dis);
-                float influence = SmoothingKernel(1, dis);
-                float density = mass * influence;
-                return density;
+                return 0;
             }
  
             ENDCG

@@ -97,6 +97,7 @@ namespace FluidSimulation
 
             private static Material _particleMaterial;
             private static Material _densityMaterial;
+            private static Material _griddensityMaterial;
             private static Material _gradientMaterial;
             private static Material _vizDensityMaterial;
             private static Material _pressureMaterial;
@@ -114,11 +115,12 @@ namespace FluidSimulation
             private static ComputeBuffer _particlesPhysicsBuffer;
             private static ComputeBuffer _argsBuffer;
             
-            public DensityFieldPass(ComputeShader computeShader, Shader drawParticlesShader, Shader drawDensityShader, Shader vizDensityShader, Shader drawGradientShader, Shader drawPressureShader)
+            public DensityFieldPass(ComputeShader computeShader, Shader drawParticlesShader, Shader drawDensityShader,Shader drawGridDensityShader, Shader vizDensityShader, Shader drawGradientShader, Shader drawPressureShader)
             {
                 _computeShader = computeShader;
                 _particleMaterial = new Material(drawParticlesShader);
                 _densityMaterial = new Material(drawDensityShader);
+                _griddensityMaterial = new Material(drawGridDensityShader);
                 _gradientMaterial = new Material(drawGradientShader);
                 _vizDensityMaterial = new Material(vizDensityShader);
                 _pressureMaterial = new Material(drawPressureShader);
@@ -254,7 +256,10 @@ namespace FluidSimulation
                 _particleMaterial.SetColor("_ParticleColor", _pColor);
                 _particleMaterial.SetFloat("_Pixel", _pPixel);
                 _particleMaterial.SetFloat("_ParticleRadius", _pRadius);
+                
                 _densityMaterial.SetFloat("_SmoothRadius", _dRadius);
+                _griddensityMaterial.SetFloat("_SmoothRadius", _dRadius);
+                
                 _gradientMaterial.SetFloat("_SmoothRadius", _dRadius);
                 _vizDensityMaterial.SetFloat("_SmoothRadius", _dRadius);
                 _vizDensityMaterial.SetColor("_UnderTargetColor", _underTargetCol);
@@ -264,15 +269,17 @@ namespace FluidSimulation
                 _pressureMaterial.SetFloat("_SmoothRadius", _dRadius);
                 _pressureMaterial.SetFloat("_TargetValue", _targetValue);
                 _pressureMaterial.SetFloat("_PressureMultiplier", _pressureMultiplier);
-                _particleMaterial.SetFloat("_Pixel", _pPixel);
-                _particleMaterial.SetFloat("_ParticleRadius", _pRadius);
+                _pressureMaterial.SetFloat("_Pixel", _pPixel);
                 
+                cmd.SetGlobalVector("_TexelSize", new Vector4( m_RTHandleDensity.rt.width,  m_RTHandleDensity.rt.height, 0, 0));
                 
                 // Draw Density
                 CreateRenderTexture("RTDensity", RenderTextureFormat.RFloat, ref _textureDescriptor, in renderingData, ref m_RTHandleDensity);
                 cmd.SetRenderTarget(m_RTHandleDensity,RenderBufferLoadAction.DontCare,RenderBufferStoreAction.DontCare);
                 cmd.SetGlobalFloat("_FluidDeltaTime", Time.deltaTime);
                 cmd.ClearRenderTarget(true, true, Color.black);
+                _griddensityMaterial.SetVector("_TexelSize", new Vector4( m_RTHandleDensity.rt.width,  m_RTHandleDensity.rt.height, 0, 0));
+                cmd.Blit(null, m_RTHandleDensity, _griddensityMaterial,0);
                 cmd.DrawMeshInstancedIndirect(_mesh, 0, _densityMaterial, 0, _argsBuffer);
                 cmd.SetGlobalTexture("_FluidDensity", m_RTHandleDensity);
                 if (drawDensityField)
@@ -360,20 +367,20 @@ namespace FluidSimulation
         public ComputeShader computeShader;
         public Shader drawParticlesShader;
         public Shader drawDensityShader;
+        public Shader drawGridDensityShader;
         public Shader vizDensityShader;
         public Shader drawGradientShader;
         public Shader drawPressureShader;
 
         public override void Create()
         {
-            if (computeShader == null || drawParticlesShader == null ||drawDensityShader == null ||vizDensityShader == null ||drawGradientShader == null || drawPressureShader == null) return;
-            m_DensityFieldPass = new DensityFieldPass(computeShader,drawParticlesShader,drawDensityShader,vizDensityShader,drawGradientShader, drawPressureShader);
+            if (computeShader == null || drawParticlesShader == null ||drawDensityShader == null || drawGridDensityShader ==null ||vizDensityShader == null ||drawGradientShader == null || drawPressureShader == null) return;
+            m_DensityFieldPass = new DensityFieldPass(computeShader,drawParticlesShader,drawDensityShader,drawGridDensityShader,vizDensityShader,drawGradientShader, drawPressureShader);
             passCreated = true;
         }
 
         public static void CreateRenderTexture(string rtName,RenderTextureFormat format , ref RenderTextureDescriptor rtTextureDescriptor ,in RenderingData renderingData, ref RTHandle rtHandle)
         {
-            // TODO:Update Handle
             if (renderingData.cameraData.cameraType != CameraType.Game) return;
             if (rtTextureDescriptor.width != renderingData.cameraData.camera.pixelWidth || rtTextureDescriptor.height != renderingData.cameraData.camera.pixelHeight || rtHandle == null)
             {
@@ -421,6 +428,7 @@ namespace FluidSimulation
         {
             if (!_isWriting)
             {
+                if (!passCreated) return;
                 renderer.EnqueuePass(m_DensityFieldPass);
             }
         }
@@ -430,7 +438,7 @@ namespace FluidSimulation
         {
             if (renderingData.cameraData.cameraType == CameraType.Game)
             {
-                
+                if (!passCreated) return;
                 // Calling ConfigureInput with the ScriptableRenderPassInput.Color argument
                 // ensures that the opaque texture is available to the Render Pass.
                 m_DensityFieldPass.ConfigureInput(ScriptableRenderPassInput.Color);

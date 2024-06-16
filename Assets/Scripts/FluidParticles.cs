@@ -23,7 +23,7 @@ namespace FluidSimulation
             fluidParticle.velocity = Vector3.zero;
             fluidParticle.position = position;
             fluidParticle.position.z = 1; // Make it 2D
-            fluidParticle.color = Vector4.zero;
+            fluidParticle.color = Vector4.one;
             return fluidParticle;
         }
 
