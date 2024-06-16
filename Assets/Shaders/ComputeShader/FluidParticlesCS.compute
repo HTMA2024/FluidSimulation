@@ -1,6 +1,7 @@
 #pragma kernel FluidSimulationCS
 #pragma kernel InitCS
 #pragma kernel FluidBuildGridCS
+#pragma kernel SortGridCS;
 
 #include "FluidParticle.hlsl"
 
@@ -12,10 +13,11 @@ float _FluidDeltaTime;
 float _EnergyDumping;
 float _SmoothRadius;
 
-uint _PrevFluidParticleCount;
-uint _CurrFluidParticleCount;
-StructuredBuffer<FluidParticlePhysics> _FluidParticleInit;
 RWStructuredBuffer<FluidParticlePhysics> _FluidParticlePhysics;
+
+RWBuffer<int> _FluidParticleGrid;
+RWBuffer<int2> _FluidParticleGridSorted;
+RWBuffer<int2> _FluidParticleGridSortedTemp;
 
 Texture2D<float> _FluidDensity;
 Texture2D<float4> _FluidPressure;
@@ -25,10 +27,11 @@ float4 _TexelSize;
 void FluidBuildGridCS (uint3 id : SV_DispatchThreadID)
 {
 	const uint idx = id.x;
-	if(idx > _FluidParticleCount) return;
+	if(idx >= _FluidParticleCount) return;
 
-	float yCount = floor(1 / _SmoothRadius);
-	float xCount = floor((_TexelSize.x / _TexelSize.y) / _SmoothRadius);
+	uint yCount = floor(1 / _SmoothRadius);
+	uint xCount = floor((_TexelSize.x / _TexelSize.y) / _SmoothRadius);
+	uint totalCount = (xCount) * (yCount);
 	
 	float2 particlePos = _FluidParticlePhysics[idx].position.xy * 0.5 + 0.5;
 	particlePos.y = 1 -  particlePos.y;
@@ -37,13 +40,34 @@ void FluidBuildGridCS (uint3 id : SV_DispatchThreadID)
 	int gID = floor(pGridIDX + pGridIDY * (xCount+1));
 
 	_FluidParticlePhysics[idx].gridID = gID;
+	uint hashGridID = floor(hashwithoutsine11(gID) * totalCount);
+	_FluidParticleGridSorted[idx] = int2(hashGridID, idx);
+	_FluidParticleGridSortedTemp[idx] = int2(hashGridID, idx);
+}
+
+[numthreads(tx,1,1)]
+void SortGridCS (uint3 id : SV_DispatchThreadID)
+{
+	const uint idx = id.x;
+	if(idx >= _FluidParticleCount) return;
+
+	if(idx == 0)
+	{
+		_FluidParticleGrid[_FluidParticleGridSorted[idx].x] = idx;
+		return;
+	}
+	
+	if(_FluidParticleGridSorted[idx].x != _FluidParticleGridSorted[idx-1].x && _FluidParticleGridSorted[idx].x < 1e7)
+	{
+		_FluidParticleGrid[_FluidParticleGridSorted[idx].x] = idx;
+	}
 }
 
 [numthreads(tx,1,1)]
 void FluidSimulationCS (uint3 id : SV_DispatchThreadID)
 {
 	const uint idx = id.x;
-	if(idx > _FluidParticleCount) return;
+	if(idx >= _FluidParticleCount) return;
 	
 	// Update Acceleration
 	float2 uv = _FluidParticlePhysics[idx].position.xy * 0.5f + 0.5f;
@@ -82,6 +106,9 @@ void FluidSimulationCS (uint3 id : SV_DispatchThreadID)
 }
 
 
+uint _PrevFluidParticleCount;
+uint _CurrFluidParticleCount;
+StructuredBuffer<FluidParticlePhysics> _FluidParticleInit;
 [numthreads(tx,1,1)]
 void InitCS (uint3 id : SV_DispatchThreadID)
 {

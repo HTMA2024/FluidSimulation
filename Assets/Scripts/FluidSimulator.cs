@@ -12,6 +12,7 @@ namespace FluidSimulation
     public class FluidSimulator : MonoBehaviour
     {
         [SerializeField] private int m_Pixel = 190;
+        [SerializeField][Range(0,40)] private int m_Selector = 0;
         [SerializeField][Range(1e-3f,1)] private float m_ParticleRadius = 0.5f;
         [SerializeField][Range(1e-3f,1)] private float m_SmoothingRadius = 0.5f;
 
@@ -46,7 +47,7 @@ namespace FluidSimulation
         {
             if (Input.GetMouseButton(0))
             {
-                FluidDensityFieldRendererFeature.DensityFieldPass.SetCursorPosition(Input.mousePosition/ new float3(m_Camera.pixelWidth,m_Camera.pixelHeight,1));
+                FluidDensityFieldRendererFeature.DensityFieldPass.SetCursorPosition(Input.mousePosition/ new float3(m_Camera.pixelWidth,m_Camera.pixelHeight,1), m_Selector);
             }
         }
 

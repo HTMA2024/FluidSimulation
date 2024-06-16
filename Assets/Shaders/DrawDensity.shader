@@ -66,7 +66,7 @@ Shader "Draw Density"
                 // fixed4 res = max(0, 1 - dis);
                 float influence = SmoothingKernel(1, dis);
                 float density = mass * influence;
-                return density;
+                return float4(density,0,0,1);
             }
  
             ENDCG
