@@ -35,6 +35,7 @@ Shader "Draw Grid"
             float _SmoothRadius;
             float4 _TexelSize;
             int _FluidParticleCount;
+            float4 _CursorPosition;
 
  
             float Mod(float x, float y)
@@ -71,11 +72,27 @@ Shader "Draw Grid"
                 float gridStroke = saturate(grid.x + grid.y);
 
                 int pID = -1;
-                for(int j = 0; j < _FluidParticleCount; j++)
+                // for(int j = 0; j < _FluidParticleCount; j++)
+                // {
+                //     if(_ComputeBuffer[j].gridID == id)
+                //     {
+                //         return  1;
+                //     }
+                // }
+
+	            float2 cursorPos = _CursorPosition.xy;
+	            int pGridIDX = floor(cursorPos.x * xCount);
+	            int pGridIDY = floor(cursorPos.y * yCount);
+                for(int j = -1; j <= 1; j++)
                 {
-                    if(_ComputeBuffer[j].gridID == id)
+                    for(int k = -1; k <= 1; k++)
                     {
-                        return  1;
+                        int gIDX = pGridIDX + j;
+                        int gIDY = pGridIDY + k;
+                        if(gIDX < 0 || gIDX > xCount) continue;
+                        if(gIDY < 0 || gIDY > yCount) continue;
+                        int gID = floor(gIDX + gIDY * (xCount+1));
+                        if(gID == id) return 1;
                     }
                 }
 
