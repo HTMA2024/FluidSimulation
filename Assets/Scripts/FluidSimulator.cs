@@ -1,8 +1,10 @@
 using System;
+using Unity.Mathematics;
 using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
 using static FluidSimulation.Globals;
 
 namespace FluidSimulation
@@ -42,6 +44,10 @@ namespace FluidSimulation
 
         private void Update()
         {
+            if (Input.GetMouseButton(0))
+            {
+                FluidDensityFieldRendererFeature.DensityFieldPass.SetCursorPosition(Input.mousePosition/ new float3(m_Camera.pixelWidth,m_Camera.pixelHeight,1));
+            }
         }
 
 

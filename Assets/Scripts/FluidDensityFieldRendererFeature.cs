@@ -21,6 +21,8 @@ namespace FluidSimulation
             Graphics
         }
 
+        private static Vector3 _cursorPos;
+
         private static Color _pColor;
         private static float _pPixel;
         private static float _pRadius;
@@ -198,26 +200,12 @@ namespace FluidSimulation
                     return;
             }
         }
-        
-
-
         #endregion
+        
             private RTHandle m_CameraColorTarget;
             public void SetTarget(RTHandle colorHandle)
             {
                 m_CameraColorTarget = colorHandle;
-            }
-
-            public void CreateRT(in RenderingData renderingData)
-            {
-                CreateRenderTexture("RTDensity", RenderTextureFormat.RFloat, ref _textureDescriptor, in renderingData, ref m_RTHandleDensity);
-
-                CreateRenderTexture("VizDensityRT", RenderTextureFormat.ARGBFloat,ref _textureDescriptor, in renderingData, ref m_RTHandleVizDensity);
-
-                CreateRenderTexture("RTGradient",RenderTextureFormat.ARGBFloat,ref _textureDescriptor, in renderingData, ref m_RTHandleGradient);
-
-                CreateRenderTexture("RTPressure",RenderTextureFormat.ARGBFloat,ref _textureDescriptor, in renderingData, ref m_RTHandlePressure);
-
             }
 
             public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
@@ -227,7 +215,15 @@ namespace FluidSimulation
                     ConfigureTarget(m_CameraColorTarget);
                 }
             }
-            
+
+            public void CreateRT(in RenderingData renderingData)
+            {
+                CreateRenderTexture("RTDensity", RenderTextureFormat.RFloat, ref _textureDescriptor, in renderingData, ref m_RTHandleDensity);
+                CreateRenderTexture("VizDensityRT", RenderTextureFormat.ARGBFloat,ref _textureDescriptor, in renderingData, ref m_RTHandleVizDensity);
+                CreateRenderTexture("RTGradient",RenderTextureFormat.ARGBFloat,ref _textureDescriptor, in renderingData, ref m_RTHandleGradient);
+                CreateRenderTexture("RTPressure",RenderTextureFormat.ARGBFloat,ref _textureDescriptor, in renderingData, ref m_RTHandlePressure);
+            }
+
             internal static void UpdateParticleCount(int prevCount, int currCount)
             {
                 // Update arg buffer
@@ -246,6 +242,11 @@ namespace FluidSimulation
                 _computeShader.SetBuffer(_initKernel,"_FluidParticlePhysics", _particlesPhysicsBuffer);
                 _computeShader.Dispatch(_initKernel, threadGroupX,1,1);
             }
+
+            internal static void SetCursorPosition(Vector3 cursorPos)
+            {
+                _cursorPos = cursorPos;
+            }
             
             public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
             {
@@ -263,6 +264,8 @@ namespace FluidSimulation
                 _particleMaterial.SetFloat("_ParticleRadius", _pRadius);
                 
                 _densityMaterial.SetFloat("_SmoothRadius", _dRadius);
+                
+                _griddensityMaterial.SetVector("_CursorPosition", _cursorPos);
                 _griddensityMaterial.SetFloat("_SmoothRadius", _dRadius);
                 _griddensityMaterial.SetVector("_TexelSize", new Vector4( m_RTHandleDensity.rt.width,  m_RTHandleDensity.rt.height, 0, 0));
                 
@@ -364,15 +367,6 @@ namespace FluidSimulation
                 m_PassInit = false;
             }
         }
-
-        // private void SetRTHandle(ref RenderingData renderingData)
-        // {
-        //     // if (m_RTHandle != null) return;
-        //     if (renderingData.cameraData.cameraType != CameraType.Game) return;
-        //     RenderTextureDescriptor renderTextureDescriptor = new RenderTextureDescriptor();
-        //     
-        //     Vector2Int screen = new Vector2Int(renderingData.cameraData.camera.pixelWidth, renderingData.cameraData.camera.pixelHeight);
-        // }
 
         public ComputeShader computeShader;
         public Shader drawParticlesShader;
