@@ -40,7 +40,7 @@ void FluidBuildGridCS (uint3 id : SV_DispatchThreadID)
 	int gID = floor(pGridIDX + pGridIDY * (xCount));
 
 	_FluidParticlePhysics[idx].gridID = gID;
-	uint hashGridID = floor(hashwithoutsine11(gID) * totalCount);
+	uint hashGridID = gID;
 	_FluidParticleGridSorted[idx] = int2(hashGridID, idx);
 	_FluidParticleGridSortedTemp[idx] = int2(hashGridID, idx);
 }

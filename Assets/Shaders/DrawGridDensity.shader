@@ -93,7 +93,7 @@ Shader "Draw Grid Density"
                         if(cID == id) // Get Closest 9 Grids
                         {
                             vizColor += float4(cID/((xCount)*(yCount)),0,0,1); // Viz Search Range
-                            uint hashGridID = floor(hashwithoutsine11(cID) * totalCount);
+                            uint hashGridID = cID;
                             
                             int sortedStartID = _FluidParticleGrid[hashGridID];
                             if(sortedStartID > _FluidParticleCount) continue;
@@ -107,7 +107,7 @@ Shader "Draw Grid Density"
                             float2 pUV = uv - startLightPos.xy;
                             pUV.x *= _TexelSize.x / _TexelSize.y;
                             float disP = distance(pUV,0);
-                            vizColor += disP < _SmoothRadius ? float4(0,0.2,0,0) : 0;
+                            vizColor += disP < _SmoothRadius/5 ? float4(0,0.2,0,0) : 0;
                             
                             loopID += 1;
                             
@@ -120,7 +120,7 @@ Shader "Draw Grid Density"
                                 float2 pUVLoop = uv - startLightPosLoop.xy;
                                 pUVLoop.x *= _TexelSize.x / _TexelSize.y;
                                 float disPLoop = distance(pUVLoop,0);
-                                vizColor += disPLoop < _SmoothRadius ? float4(0,0.2,0,0) : 0;
+                                vizColor += disPLoop < _SmoothRadius/5 ? float4(0,0.2,0,0) : 0;
                                 
                                 loopID += 1;
                             }
@@ -186,7 +186,7 @@ Shader "Draw Grid Density"
                         int cID = floor(cIDX + cIDY * (xCount));
                         // vizColor.r += float4(cID/((xCount)*(yCount)),0,0,1); // Viz Search Range
                         
-                        uint hashGridID = floor(hashwithoutsine11(cID) * totalCount);
+                        uint hashGridID = cID;
                         int sortedStartID = _FluidParticleGrid[hashGridID];
                         if(sortedStartID > _FluidParticleCount) continue;
                         int lightInGridStartID = _FluidParticleGridSorted[sortedStartID].y;
@@ -229,14 +229,14 @@ Shader "Draw Grid Density"
                 //     }
                 // }
 
-	            float2 cursorPos = _CursorPosition.xy;
-                float4 vizColor = VizSearchLight(i.uv, cursorPos);
+	            // float2 cursorPos = _CursorPosition.xy;
+                // float4 vizColor = VizSearchLight(i.uv, cursorPos);
 
-                // float4 density = CalculateDensitySearch(i.uv);
+                float4 density = CalculateDensitySearch(i.uv);
 
                 // float output = pID == id ? 1 : gridStroke;
                 // return idListDisplay;
-                return vizColor;
+                return density;
             }
  
             ENDCG

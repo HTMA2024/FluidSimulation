@@ -264,7 +264,7 @@ namespace FluidSimulation
 
             public void CreateRT(in RenderingData renderingData)
             {
-                CreateRenderTexture("RTDensity", RenderTextureFormat.RGFloat, ref _textureDescriptor, in renderingData, ref m_RTHandleDensity);
+                CreateRenderTexture("RTDensity", RenderTextureFormat.RFloat, ref _textureDescriptor, in renderingData, ref m_RTHandleDensity);
                 CreateRenderTexture("VizDensityRT", RenderTextureFormat.ARGBFloat,ref _textureDescriptor, in renderingData, ref m_RTHandleVizDensity);
                 CreateRenderTexture("RTGradient",RenderTextureFormat.ARGBFloat,ref _textureDescriptor, in renderingData, ref m_RTHandleGradient);
                 CreateRenderTexture("RTPressure",RenderTextureFormat.ARGBFloat,ref _textureDescriptor, in renderingData, ref m_RTHandlePressure);
@@ -378,7 +378,7 @@ namespace FluidSimulation
                 
                 
                 // Draw Grid Density
-                CreateRenderTexture("RTDensity", RenderTextureFormat.RGFloat, ref _textureDescriptor, in renderingData, ref m_RTHandleDensity);
+                CreateRenderTexture("RTDensity", RenderTextureFormat.RFloat, ref _textureDescriptor, in renderingData, ref m_RTHandleDensity);
                 cmd.SetRenderTarget(m_RTHandleDensity,RenderBufferLoadAction.DontCare,RenderBufferStoreAction.DontCare);
                 cmd.ClearRenderTarget(true, true, Color.black);
                 cmd.Blit(null, m_RTHandleDensity, _gridDensityMaterial,0);
