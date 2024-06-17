@@ -464,12 +464,10 @@ MonoBehaviour:
   _underTargetCol: {r: 0.27987415, g: 0.7378853, b: 1, a: 0}
   _overTargetCol: {r: 1, g: 0.36163503, b: 0.36163503, a: 0}
   _aroundTargetCol: {r: 1, g: 1, b: 1, a: 0}
-  _targetDensity: 1
+  _targetDensity: 10
   _pressureMultiplier: 1
   m_EnableUpdate: 0
   m_DrawDensityField: 1
-  m_DrawGridDensityField: 0
-  m_DrawGridPressureField: 0
   m_DrawVizDensityMap: 0
   m_DrawGradientField: 0
   m_DrawPressureField: 0
