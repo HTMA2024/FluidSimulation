@@ -97,18 +97,18 @@ Shader "Draw Grid Pressure"
 
                 float dis = abs(distance(s,0));
                 float2 dir = dis <= 1e-5 ? GetRandomDir(_Time.y) : s/dis;
-                fixed slope = SmoothingKernelDerivative(1, dis);
+                fixed slope = SmoothingKernelDerivative(_SmoothRadius, dis);
                 uint2 uvIndex = floor(float2(uv.x * _TexelSize.x, uv.y * _TexelSize.y));
                 uint2 uvLightIndex = floor(float2(lightPos.x * _TexelSize.x, lightPos.y * _TexelSize.y));
                 float densitySelf = _FluidDensity[uvIndex]; // Need to be changed
                 float densityOthers = _FluidDensity[uvLightIndex]; // Need to be changed
                 
-                float2 gradient = densitySelf < 1e-5 ? 0 : -dir * slope * mass / max(densitySelf,1e-5);
+                float2 gradient = -dir * slope * mass / max(densitySelf,1e-5);
                 float pressureSelf = ConvertDensityToPressure(densitySelf, _TargetValue, _PressureMultiplier);
                 float pressureOthers = ConvertDensityToPressure(densityOthers, _TargetValue, _PressureMultiplier);
                 float pressure = (pressureSelf + pressureOthers) / 2;
                 float2 pressureForce = pressure * gradient;
-                float4 res = dis < 1.f/(_Pixel * _SmoothRadius) ? 0.0 : float4(pressureForce,0,1);
+                float4 res = dis < 1e-3 ? 0.0 : float4(pressureForce,0,1);
                 
                 return res;
             }
@@ -179,14 +179,14 @@ Shader "Draw Grid Pressure"
 	            // float2 cursorPos = _CursorPosition.xy;
                 // float4 vizColor = VizSearchLight(i.uv, cursorPos);
 
-                // float4 pressure = CalculatePressureSearch(i.uv);
+                float4 pressure = CalculatePressureSearch(i.uv);
 
                 uint2 uvIndex = floor(float2(i.uv.x * _TexelSize.x, i.uv.y * _TexelSize.y));
                 float densitySelf = _FluidDensity[uvIndex]; // Need to be changed
 
                 // float output = pID == id ? 1 : gridStroke;
                 // return idListDisplay;
-                return densitySelf;
+                return pressure;
             }
  
             ENDCG
