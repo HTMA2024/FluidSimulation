@@ -13,10 +13,11 @@ MonoBehaviour:
   m_Name: RendererFeatureldRendererFeature
   m_EditorClassIdentifier: 
   m_Active: 1
-  computeShader: {fileID: 7200000, guid: 3ee609e653ae2a44ab767f8ddce950b2, type: 3}
+  fluidPhysicsCS: {fileID: 7200000, guid: 3ee609e653ae2a44ab767f8ddce950b2, type: 3}
+  bitonicSortCS: {fileID: 7200000, guid: 73734f2ba736eae479a16d26984a7168, type: 3}
   drawParticlesShader: {fileID: 4800000, guid: c19c15976cbc9384c98f94bdae6f3a32, type: 3}
   drawDensityShader: {fileID: 4800000, guid: 4c38c55807af36e4581cd8049b6cecaf, type: 3}
-  drawGridDensityShader: {fileID: 4800000, guid: 732a1e5eb4bee5240a341c2551b50fa4,
+  drawGridDensityShader: {fileID: 4800000, guid: 05425a8266f5bef4a8d994b3457c9264,
     type: 3}
   vizDensityShader: {fileID: 4800000, guid: ffa210c1bb026754ba7a48642ff77fd4, type: 3}
   drawGradientShader: {fileID: 4800000, guid: 16a1d21b556c716428c3a5911699e86c, type: 3}
