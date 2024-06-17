@@ -110,7 +110,7 @@ Shader "Draw Grid Pressure"
                 float2 pressureForce = pressure * gradient;
                 float4 res = dis < 1.f/(_Pixel * _SmoothRadius) ? 0.0 : float4(pressureForce,0,1);
                 
-                return 1;
+                return res;
             }
 
             float4 CalculatePressureSearch(float2 uv)
@@ -135,7 +135,7 @@ Shader "Draw Grid Pressure"
                         if(cIDY < 0 || cIDY > yCount-1) continue;
                         int cID = floor(cIDX + cIDY * (xCount));
                         
-                        uint hashGridID = floor(hashwithoutsine11(cID) * totalCount);
+                        uint hashGridID = cID;
                         int sortedStartID = _FluidParticleGrid[hashGridID];
                         if(sortedStartID > _FluidParticleCount) continue;
                         int lightInGridStartID = _FluidParticleGridSorted[sortedStartID].y;
@@ -179,11 +179,14 @@ Shader "Draw Grid Pressure"
 	            // float2 cursorPos = _CursorPosition.xy;
                 // float4 vizColor = VizSearchLight(i.uv, cursorPos);
 
-                float4 pressure = CalculatePressureSearch(i.uv);
+                // float4 pressure = CalculatePressureSearch(i.uv);
+
+                uint2 uvIndex = floor(float2(i.uv.x * _TexelSize.x, i.uv.y * _TexelSize.y));
+                float densitySelf = _FluidDensity[uvIndex]; // Need to be changed
 
                 // float output = pID == id ? 1 : gridStroke;
                 // return idListDisplay;
-                return pressure;
+                return densitySelf;
             }
  
             ENDCG
