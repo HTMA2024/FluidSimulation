@@ -21,11 +21,13 @@ namespace FluidSimulation
         [SerializeField] private Color _underTargetCol;
         [SerializeField] private Color _overTargetCol;
         [SerializeField] private Color _aroundTargetCol;
-        [SerializeField][Range(1e-3f,30)] private float _targetDensity = 1f;
+        [SerializeField][Range(1e-3f,3)] private float _targetDensity = 1f;
         [SerializeField][Range(1e-3f,10)] private float _pressureMultiplier = 1f;
         
         [SerializeField] private bool m_EnableUpdate = false;
         [SerializeField] private bool m_DrawDensityField = false;
+        [SerializeField] private bool m_DrawGridDensityField = false;
+        [SerializeField] private bool m_DrawGridPressureField = false;
         [SerializeField] private bool m_DrawVizDensityMap = false;
         [SerializeField] private bool m_DrawGradientField = false;
         [SerializeField] private bool m_DrawPressureField = false;
@@ -61,7 +63,10 @@ namespace FluidSimulation
                 FluidDensityFieldRendererFeature.SetVizDensityParams(_overTargetCol, _underTargetCol,_aroundTargetCol, _targetDensity);
                 FluidDensityFieldRendererFeature.SetPressureParams(_targetDensity, _pressureMultiplier);
                 FluidDensityFieldRendererFeature.enableUpdate = m_EnableUpdate;
-                FluidDensityFieldRendererFeature.drawDensityField = m_DrawDensityField;
+                FluidDensityFieldRendererFeature.drawBlendDensityField = m_DrawDensityField;
+                FluidDensityFieldRendererFeature.drawGridDensityField = m_DrawGridDensityField;
+                FluidDensityFieldRendererFeature.drawGridPressureField = m_DrawGridPressureField;
+                
                 FluidDensityFieldRendererFeature.drawVizDensityMap = m_DrawVizDensityMap;
                 FluidDensityFieldRendererFeature.drawGradientField = m_DrawGradientField;
                 FluidDensityFieldRendererFeature.drawPressureField = m_DrawPressureField;

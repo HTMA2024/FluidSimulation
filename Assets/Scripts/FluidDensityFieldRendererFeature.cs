@@ -51,15 +51,15 @@ namespace FluidSimulation
         private DensityFieldPass m_DensityFieldPass;
 
         internal static bool enableUpdate = false;
-        internal static bool drawDensityField = false;
+        internal static bool drawBlendDensityField = false;
+        internal static bool drawGridDensityField = false;
+        internal static bool drawGridPressureField = false;
         internal static bool drawVizDensityMap = false;
         internal static bool drawGradientField = false;
         internal static bool drawPressureField = false;
         internal static bool drawParticles = false;
         private static bool _isWriting = false;
         public static bool passCreated = false;
-
-        
         
 
         #region Helpers
@@ -105,6 +105,7 @@ namespace FluidSimulation
             private static Material _particleMaterial;
             private static Material _densityMaterial;
             private static Material _gridDensityMaterial;
+            private static Material _gridPressureMaterial;
             private static Material _gradientMaterial;
             private static Material _vizDensityMaterial;
             private static Material _pressureMaterial;
@@ -129,7 +130,7 @@ namespace FluidSimulation
             private int2[] _particleGridIndex;
             private int[] _gidIndex;
             
-            public DensityFieldPass(ComputeShader fluidPhysicsCs, ComputeShader bitonicSortCS,Shader drawParticlesShader, Shader drawDensityShader,Shader drawGridDensityShader, Shader vizDensityShader, Shader drawGradientShader, Shader drawPressureShader)
+            public DensityFieldPass(ComputeShader fluidPhysicsCs, ComputeShader bitonicSortCS,Shader drawParticlesShader, Shader drawDensityShader,Shader drawGridDensityShader, Shader vizDensityShader, Shader drawGradientShader, Shader drawPressureShader, Shader drawGridPressureShader)
             {
                 _fluidPhysicsCS = fluidPhysicsCs;
                 _bitonicSortCS = bitonicSortCS;
@@ -139,6 +140,7 @@ namespace FluidSimulation
                 _gradientMaterial = new Material(drawGradientShader);
                 _vizDensityMaterial = new Material(vizDensityShader);
                 _pressureMaterial = new Material(drawPressureShader);
+                _gridPressureMaterial = new Material(drawGridPressureShader);
                 
                 _particlesGraphicsBuffer?.Release();
                 _particlesInitBuffer?.Release();
@@ -187,12 +189,17 @@ namespace FluidSimulation
                 _gridDensityMaterial.SetBuffer("_FluidParticleGrid", _fluidParticleGridBuffer);
                 _gridDensityMaterial.SetBuffer("_FluidParticleGridSorted", _fluidParticleGridSortedBuffer);
                 
+                _gridPressureMaterial.SetBuffer("_FluidParticleGrid", _fluidParticleGridBuffer);
+                _gridPressureMaterial.SetBuffer("_FluidParticleGridSorted", _fluidParticleGridSortedBuffer);
+                
+                
                 _particleMaterial.SetBuffer("_ComputeBuffer", _particlesPhysicsBuffer);
                 _densityMaterial.SetBuffer("_ComputeBuffer", _particlesPhysicsBuffer);
                 _gradientMaterial.SetBuffer("_ComputeBuffer", _particlesPhysicsBuffer);
                 _vizDensityMaterial.SetBuffer("_ComputeBuffer", _particlesPhysicsBuffer);
                 _pressureMaterial.SetBuffer("_ComputeBuffer", _particlesPhysicsBuffer);
                 _gridDensityMaterial.SetBuffer("_ComputeBuffer", _particlesPhysicsBuffer);
+                _gridPressureMaterial.SetBuffer("_ComputeBuffer", _particlesPhysicsBuffer);
 
                 _mesh = CreateQuad(1, 1);
                 _args[0] = (uint)_mesh.GetIndexCount(0);
@@ -257,7 +264,7 @@ namespace FluidSimulation
 
             public void CreateRT(in RenderingData renderingData)
             {
-                CreateRenderTexture("RTDensity", RenderTextureFormat.RGFloat, ref _textureDescriptor, in renderingData, ref m_RTHandleDensity);
+                CreateRenderTexture("RTDensity", RenderTextureFormat.RFloat, ref _textureDescriptor, in renderingData, ref m_RTHandleDensity);
                 CreateRenderTexture("VizDensityRT", RenderTextureFormat.ARGBFloat,ref _textureDescriptor, in renderingData, ref m_RTHandleVizDensity);
                 CreateRenderTexture("RTGradient",RenderTextureFormat.ARGBFloat,ref _textureDescriptor, in renderingData, ref m_RTHandleGradient);
                 CreateRenderTexture("RTPressure",RenderTextureFormat.ARGBFloat,ref _textureDescriptor, in renderingData, ref m_RTHandlePressure);
@@ -332,7 +339,6 @@ namespace FluidSimulation
                 _gridDensityMaterial.SetVector("_CursorPosition", _cursorPos);
                 _gridDensityMaterial.SetFloat("_SmoothRadius", _dRadius);
                 _gridDensityMaterial.SetVector("_TexelSize", textureSize);
-                _gridDensityMaterial.SetInt("_Selector", _selector);
                 
                 _gradientMaterial.SetFloat("_SmoothRadius", _dRadius);
                 _vizDensityMaterial.SetFloat("_SmoothRadius", _dRadius);
@@ -346,9 +352,14 @@ namespace FluidSimulation
                 _pressureMaterial.SetFloat("_PressureMultiplier", _pressureMultiplier);
                 _pressureMaterial.SetFloat("_Pixel", _pPixel);
                 
+                _gridPressureMaterial.SetFloat("_SmoothRadius", _dRadius);
+                _gridPressureMaterial.SetFloat("_TargetValue", _targetValue);
+                _gridPressureMaterial.SetFloat("_PressureMultiplier", _pressureMultiplier);
+                _gridPressureMaterial.SetFloat("_Pixel", _pPixel);
+                
                 cmd.SetGlobalInt("_FluidParticleCount", FluidParticleCount);
                 
-                // Grid
+                // Sort
                 UpdateGridBuffer(cmd, textureSize, _dRadius);
                 cmd.SetComputeBufferParam(_fluidPhysicsCS,_sortGridKernel,"_FluidParticleGrid" , _fluidParticleGridBuffer);
                 
@@ -362,16 +373,26 @@ namespace FluidSimulation
                 cmd.DispatchCompute(_fluidPhysicsCS,_sortGridKernel,Mathf.CeilToInt(FluidParticleCount / 64.0f),1,1 );
                 _gridDensityMaterial.SetBuffer("_FluidParticleGrid", _fluidParticleGridBuffer);
                 _gridDensityMaterial.SetBuffer("_FluidParticleGridSorted", _fluidParticleGridSortedBuffer);
+                _gridPressureMaterial.SetBuffer("_FluidParticleGrid", _fluidParticleGridBuffer);
+                _gridPressureMaterial.SetBuffer("_FluidParticleGridSorted", _fluidParticleGridSortedBuffer);
                 
-                // Draw Density
-                CreateRenderTexture("RTDensity", RenderTextureFormat.RGFloat, ref _textureDescriptor, in renderingData, ref m_RTHandleDensity);
+                
+                // Draw Grid Density
+                CreateRenderTexture("RTDensity", RenderTextureFormat.RFloat, ref _textureDescriptor, in renderingData, ref m_RTHandleDensity);
                 cmd.SetRenderTarget(m_RTHandleDensity,RenderBufferLoadAction.DontCare,RenderBufferStoreAction.DontCare);
                 cmd.ClearRenderTarget(true, true, Color.black);
                 cmd.Blit(null, m_RTHandleDensity, _gridDensityMaterial,0);
-                // cmd.DrawMeshInstancedIndirect(_mesh, 0, _densityMaterial, 0, _argsBuffer);
                 cmd.SetGlobalTexture("_FluidDensity", m_RTHandleDensity);
-                if (drawDensityField)
+                if (drawGridDensityField)
                 {
+                    Blitter.BlitCameraTexture(cmd, m_RTHandleDensity, m_CameraColorTarget, 0);
+                }
+                
+                // Draw Density
+                if (drawBlendDensityField)
+                {
+                    cmd.ClearRenderTarget(true, true, Color.black);
+                    cmd.DrawMeshInstancedIndirect(_mesh, 0, _densityMaterial, 0, _argsBuffer);
                     Blitter.BlitCameraTexture(cmd, m_RTHandleDensity, m_CameraColorTarget, 0);
                 }
 
@@ -399,9 +420,16 @@ namespace FluidSimulation
                 CreateRenderTexture("RTPressure",RenderTextureFormat.ARGBFloat,ref _textureDescriptor, in renderingData, ref m_RTHandlePressure);
                 cmd.SetRenderTarget(m_RTHandlePressure, RenderBufferLoadAction.DontCare,RenderBufferStoreAction.DontCare );
                 cmd.ClearRenderTarget(true, true, Color.black);
-                cmd.DrawMeshInstancedIndirect(_mesh, 0, _pressureMaterial, 0, _argsBuffer);
+                cmd.Blit(null, m_RTHandlePressure, _gridPressureMaterial, 0);
+                if (drawGridPressureField)
+                {
+                    Blitter.BlitCameraTexture(cmd, m_RTHandlePressure, m_CameraColorTarget, 0);
+                }
+
                 if (drawPressureField)
                 {
+                    cmd.ClearRenderTarget(true, true, Color.black);
+                    cmd.DrawMeshInstancedIndirect(_mesh, 0, _pressureMaterial, 0, _argsBuffer);
                     Blitter.BlitCameraTexture(cmd, m_RTHandlePressure, m_CameraColorTarget, 0);
                 }
                 
@@ -455,11 +483,12 @@ namespace FluidSimulation
         public Shader vizDensityShader;
         public Shader drawGradientShader;
         public Shader drawPressureShader;
+        public Shader drawGridPressureShader;
 
         public override void Create()
         {
-            if (fluidPhysicsCS == null || bitonicSortCS == null || drawParticlesShader == null ||drawDensityShader == null || drawGridDensityShader ==null ||vizDensityShader == null ||drawGradientShader == null || drawPressureShader == null) return;
-            m_DensityFieldPass = new DensityFieldPass(fluidPhysicsCS,bitonicSortCS, drawParticlesShader,drawDensityShader,drawGridDensityShader,vizDensityShader,drawGradientShader, drawPressureShader);
+            if (fluidPhysicsCS == null || bitonicSortCS == null || drawParticlesShader == null ||drawDensityShader == null || drawGridDensityShader ==null ||vizDensityShader == null ||drawGradientShader == null || drawPressureShader == null || drawGridPressureShader == null) return;
+            m_DensityFieldPass = new DensityFieldPass(fluidPhysicsCS,bitonicSortCS, drawParticlesShader,drawDensityShader,drawGridDensityShader,vizDensityShader,drawGradientShader, drawPressureShader, drawGridPressureShader);
             passCreated = true;
         }
 
