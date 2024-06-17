@@ -22,8 +22,6 @@ MonoBehaviour:
   vizDensityShader: {fileID: 4800000, guid: ffa210c1bb026754ba7a48642ff77fd4, type: 3}
   drawGradientShader: {fileID: 4800000, guid: 16a1d21b556c716428c3a5911699e86c, type: 3}
   drawPressureShader: {fileID: 4800000, guid: da91cb161182328448b5ed2e1cc06dad, type: 3}
-  drawGridPressureShader: {fileID: 4800000, guid: 682646e141d3d344491d82e3efa75f54,
-    type: 3}
 --- !u!114 &-1878332245247344467
 MonoBehaviour:
   m_ObjectHideFlags: 0

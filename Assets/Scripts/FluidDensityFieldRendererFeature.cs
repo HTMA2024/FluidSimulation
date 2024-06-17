@@ -29,7 +29,7 @@ namespace FluidSimulation
         private static float _pRadius;
         private static float _energyDamping;
         private static float _dRadius;
-        private static float _selector;
+        private static int _selector;
         private static Color _underTargetCol;
         private static Color _overTargetCol;
         private static Color _aroundTargetCol;
@@ -289,12 +289,9 @@ namespace FluidSimulation
                 _fluidPhysicsCS.Dispatch(_initKernel, threadGroupX,1,1);
             }
 
-            internal static void SetCursorPosition(Vector3 cursorPos)
+            internal static void SetCursorPosition(Vector3 cursorPos, int selector)
             {
                 _cursorPos = cursorPos;
-            }
-            internal static void SetSelector(float selector)
-            {
                 _selector = selector;
             }
 
@@ -339,7 +336,6 @@ namespace FluidSimulation
                 
                 _densityMaterial.SetFloat("_SmoothRadius", _dRadius);
                 
-                _gridDensityMaterial.SetFloat("_Selector", _selector);
                 _gridDensityMaterial.SetVector("_CursorPosition", _cursorPos);
                 _gridDensityMaterial.SetFloat("_SmoothRadius", _dRadius);
                 _gridDensityMaterial.SetVector("_TexelSize", textureSize);
@@ -377,7 +373,6 @@ namespace FluidSimulation
                 cmd.DispatchCompute(_fluidPhysicsCS,_sortGridKernel,Mathf.CeilToInt(FluidParticleCount / 64.0f),1,1 );
                 _gridDensityMaterial.SetBuffer("_FluidParticleGrid", _fluidParticleGridBuffer);
                 _gridDensityMaterial.SetBuffer("_FluidParticleGridSorted", _fluidParticleGridSortedBuffer);
-                _gridDensityMaterial.SetFloat("_Selector", _selector);
                 _gridPressureMaterial.SetBuffer("_FluidParticleGrid", _fluidParticleGridBuffer);
                 _gridPressureMaterial.SetBuffer("_FluidParticleGridSorted", _fluidParticleGridSortedBuffer);
                 

@@ -144,12 +144,6 @@ Shader "Draw Grid Pressure"
                         float2 startLightPos = _ComputeBuffer[lightInGridStartID].position * 0.5 + 0.5;
                         startLightPos.y = 1 -  startLightPos.y;
 
-                        float2 s = uv - startLightPos;
-                        s.y *= 2;
-                        s.x *= 2 * _TexelSize.x/_TexelSize.y;
-                        float dst = abs(distance(s,0));
-                        if (dst > _SmoothRadius) continue;
-                        
                         uint loopID = sortedStartID;
                         float4 pressure = CalculatePressure(uv, startLightPos);
                         vizColor += pressure;
