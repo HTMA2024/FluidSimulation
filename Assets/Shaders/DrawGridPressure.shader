@@ -108,7 +108,7 @@ Shader "Draw Grid Pressure"
                 float pressureOthers = ConvertDensityToPressure(densityOthers, _TargetValue, _PressureMultiplier);
                 float pressure = (pressureSelf + pressureOthers) / 2;
                 float2 pressureForce = pressure * gradient;
-                float4 res = dis < 1e-2 ? 0.0 : float4(pressureForce,0,1);
+                float4 res = dis < 1e-3 ? 0.0 : float4(pressureForce,0,1);
                 
                 return res;
             }
