@@ -87,7 +87,7 @@ void FluidSimulationCS (uint3 id : SV_DispatchThreadID)
 	float3 velocity = _FluidParticlePhysics[idx].velocity + acceleration * _FluidDeltaTime;
 	float3 position = _FluidParticlePhysics[idx].position + velocity * _FluidDeltaTime;
 
-	float halfBoundSize = 1.f - _ParticleRadius;
+	float halfBoundSize = 1.f - 0.05;
 	if(abs(position.x) > halfBoundSize)
 	{
 		position.x = halfBoundSize * sign(position.x);

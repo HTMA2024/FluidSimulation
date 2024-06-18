@@ -21,7 +21,7 @@ namespace FluidSimulation
         [SerializeField] private Color _underTargetCol;
         [SerializeField] private Color _overTargetCol;
         [SerializeField] private Color _aroundTargetCol;
-        [SerializeField][Range(1e-3f,3)] private float _targetDensity = 1f;
+        [SerializeField][Range(1e-3f,500)] private float _targetDensity = 1f;
         [SerializeField][Range(1e-3f,10)] private float _pressureMultiplier = 1f;
         
         [SerializeField] private bool m_EnableUpdate = false;
