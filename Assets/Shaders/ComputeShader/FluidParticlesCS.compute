@@ -78,6 +78,7 @@ void FluidSimulationCS (uint3 id : SV_DispatchThreadID)
 	
 	float density = _FluidDensity[uvIndex.xy];
 	float2 pressure = _FluidPressure[uvIndex.xy].xy;
+	pressure += float2(0,-10000);
 	float3 acceleration = 0;
 	acceleration.xy = pressure/ max(density, 1e-5);
 	acceleration.y *= -1;
@@ -91,13 +92,13 @@ void FluidSimulationCS (uint3 id : SV_DispatchThreadID)
 	if(abs(position.x) > halfBoundSize)
 	{
 		position.x = halfBoundSize * sign(position.x);
-		velocity.x *= -1;
+		velocity.x *= -1 * _EnergyDumping;
 	}
 	
 	if(abs(position.y) > halfBoundSize)
 	{
 		position.y = halfBoundSize * sign(position.y);
-		velocity.y *= -1;
+		velocity.y *= -1 * _EnergyDumping;
 	}
 	
 	_FluidParticlePhysics[idx].color = float4(pressure.xy,0,1);

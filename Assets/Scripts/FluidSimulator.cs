@@ -21,7 +21,7 @@ namespace FluidSimulation
         [SerializeField] private Color _underTargetCol;
         [SerializeField] private Color _overTargetCol;
         [SerializeField] private Color _aroundTargetCol;
-        [SerializeField][Range(1e-3f,500)] private float _targetDensity = 1f;
+        [SerializeField][Range(1e-3f,5000)] private float _targetDensity = 1f;
         [SerializeField][Range(1e-3f,10)] private float _pressureMultiplier = 1f;
         
         [SerializeField] private bool m_EnableUpdate = false;
@@ -34,6 +34,9 @@ namespace FluidSimulation
         [SerializeField] private bool m_DrawParticles = false;
 
         [SerializeField] private RTHandle m_RenderTexture;
+        
+        [SerializeField] private float m_Radius = 0.1f;
+        [SerializeField] private int m_AddCount = 500;
             
         private Camera m_Camera;
         private int m_FluidParticleCount = 0;
@@ -50,6 +53,7 @@ namespace FluidSimulation
             if (Input.GetMouseButton(0))
             {
                 FluidDensityFieldRendererFeature.DensityFieldPass.SetCursorPosition(Input.mousePosition/ new float3(m_Camera.pixelWidth,m_Camera.pixelHeight,1), m_Selector);
+                AddParticlesAroundCursor(Input.mousePosition / new float3(m_Camera.pixelWidth, m_Camera.pixelHeight, 1), m_Radius, m_AddCount);
             }
         }
 
@@ -93,7 +97,7 @@ namespace FluidSimulation
 
         private void FillScreenCenter(int squareSize ,int density)
         {
-            FluidParticlePhysicsSystem.FillScreenCenter(squareSize,m_Camera.pixelWidth, m_Camera.pixelHeight,density);
+            FluidParticlePhysicsSystem.FillScreenCenter(squareSize, m_Camera.pixelWidth, m_Camera.pixelHeight,density);
         }
         
         private void FillScreen(int density)
@@ -104,6 +108,11 @@ namespace FluidSimulation
         private void FillScreenRandom(int count)
         {
             FluidParticlePhysicsSystem.FillScreenRandom(count);
+        }
+
+        private void AddParticlesAroundCursor(float3 cursorPosition, float radius ,int count)
+        {
+            FluidParticlePhysicsSystem.AddParticlesAroundCursor(cursorPosition, radius , count);
         }
 
         private void OnDestroy()

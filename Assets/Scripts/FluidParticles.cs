@@ -69,6 +69,21 @@ namespace FluidSimulation
             DensityFieldPass.EndWriteBuffer(FluidComputeBufferType.Physics,count);
             SetParticleCount(FluidParticleCount + count);
         }
+
+        internal static void AddParticlesAroundCursor(Vector3 position, float radius, int count)
+        {
+            var positions = new Vector3[count];
+            
+            for (int i = 0; i < count; i++)
+            {
+                var pos = position;
+                pos = pos * 2 - Vector3.one;
+                pos.y *= -1;
+                pos += new Vector3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), 0) * radius;
+                positions[i] = pos;
+            }
+            AddMultiple(positions, count);
+        }
         
         internal static void FillScreen(float pwidth,float pheight,float density)
         {
