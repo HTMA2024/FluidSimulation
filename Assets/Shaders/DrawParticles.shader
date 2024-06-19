@@ -47,7 +47,7 @@ Shader "Draw Particles"
                 pos.x *= _TexelSize.y/_TexelSize.x;
                 o.vertex = pos;
                 o.vertex.xy += _ComputeBuffer[instanceID].position.xy;
-                o.color = _ComputeBuffer[instanceID].color;
+                o.color.x = distance(_ComputeBuffer[instanceID].velocity, 0);
                 // o.color = float4(_ComputeBuffer[instanceID].color,1);
                 o.uv = i.uv;
 
@@ -60,8 +60,9 @@ Shader "Draw Particles"
                 float2 s = i.uv * 2.0 - 1.0;
                 float dis = abs(distance(s,0)) ;
                 clip(1 - dis);
-                float4 res = _ParticleColor;
-                return res;
+                float4 res = 1;
+                res.xyz *= lerp(float3(0,0.3,1), _ParticleColor, i.color.x);
+                return res ;
             }
  
             ENDCG

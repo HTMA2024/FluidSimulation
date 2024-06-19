@@ -17,6 +17,7 @@ namespace FluidSimulation
         [SerializeField][Range(1e-3f,1)] private float m_SmoothingRadius = 0.5f;
 
         [SerializeField] [Range(0.8f, 1)] private float _energyDamping = 1;
+        [SerializeField] private float _gravity = 1;
         [SerializeField] private Color _particleColor;
         [SerializeField] private Color _underTargetCol;
         [SerializeField] private Color _overTargetCol;
@@ -62,7 +63,7 @@ namespace FluidSimulation
         {
             if (FluidDensityFieldRendererFeature.passCreated)
             {
-                FluidDensityFieldRendererFeature.SetParticleParams(m_ParticleRadius, _particleColor, _energyDamping, m_Pixel);
+                FluidDensityFieldRendererFeature.SetParticleParams(m_ParticleRadius, _particleColor, _gravity, _energyDamping, m_Pixel);
                 FluidDensityFieldRendererFeature.SetDensityRadius(m_SmoothingRadius);
                 FluidDensityFieldRendererFeature.SetVizDensityParams(_overTargetCol, _underTargetCol,_aroundTargetCol, _targetDensity);
                 FluidDensityFieldRendererFeature.SetPressureParams(_targetDensity, _pressureMultiplier);
