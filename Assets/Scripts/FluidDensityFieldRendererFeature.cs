@@ -27,6 +27,7 @@ namespace FluidSimulation
         private static Color _pColor;
         private static float _pPixel;
         private static float _pRadius;
+        private static float _gravity;
         private static float _energyDamping;
         private static float _dRadius;
         private static int _selector;
@@ -64,11 +65,12 @@ namespace FluidSimulation
 
         #region Helpers
 
-        internal static void SetParticleParams(float radius, Color color, float energyDamping, float pixel)
+        internal static void SetParticleParams(float radius, Color color, float gravity, float energyDamping, float pixel)
         {
             _pPixel = pixel;
             _pColor = color;
             _pRadius = radius;
+            _gravity = gravity;
             _energyDamping = energyDamping;
         }
         internal static void SetDensityRadius(float radius)
@@ -439,6 +441,7 @@ namespace FluidSimulation
                     cmd.SetComputeFloatParam(_fluidPhysicsCS,"_EnergyDumping", _energyDamping);
                     cmd.SetComputeFloatParam(_fluidPhysicsCS,"_ParticleSize", _pRadius);
                     cmd.SetComputeFloatParam(_fluidPhysicsCS,"_Deltatime", Time.deltaTime);
+                    cmd.SetComputeFloatParam(_fluidPhysicsCS, "_Gravity", _gravity);
                     cmd.SetComputeVectorParam(_fluidPhysicsCS, "_TexelSize", new Vector4( m_RTHandleDensity.rt.width,  m_RTHandleDensity.rt.height, 0, 0));
                     cmd.SetComputeTextureParam(_fluidPhysicsCS, _mainKernel, "_FluidDensity", m_RTHandleDensity);
                     cmd.SetComputeTextureParam(_fluidPhysicsCS, _mainKernel, "_FluidPressure", m_RTHandlePressure);
