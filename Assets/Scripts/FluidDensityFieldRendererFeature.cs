@@ -131,6 +131,8 @@ namespace FluidSimulation
             
             private int2[] _particleGridIndex;
             private int[] _gidIndex;
+
+            private float m_DeltaTime = 0;
             
             public DensityFieldPass(ComputeShader fluidPhysicsCs, ComputeShader bitonicSortCS,Shader drawParticlesShader, Shader drawDensityShader,Shader drawGridDensityShader, Shader vizDensityShader, Shader drawGradientShader, Shader drawPressureShader, Shader drawGridPressureShader)
             {
@@ -321,14 +323,16 @@ namespace FluidSimulation
                 if (renderingData.cameraData.cameraType != CameraType.Game) return;
                 
                 CommandBuffer cmd = CommandBufferPool.Get(name: "DensityFieldPass");
-
                 Vector4 textureSize = Vector4.zero;
                 if (m_RTHandleDensity.rt != null)
                 { 
                     textureSize = new Vector4(m_RTHandleDensity.rt.width, m_RTHandleDensity.rt.height, 0, 0);
                 }
-                
-                cmd.SetGlobalFloat("_FluidDeltaTime", Time.deltaTime);
+                if (enableUpdate)
+                {
+                    m_DeltaTime = 0.01f;
+                }
+                cmd.SetGlobalFloat("_FluidDeltaTime", m_DeltaTime);
                 cmd.SetGlobalFloat("_SmoothRadius", _dRadius);
                 cmd.SetGlobalVector("_TexelSize", textureSize);
             
