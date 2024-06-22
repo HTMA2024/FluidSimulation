@@ -192,7 +192,7 @@ Shader "Draw Grid Density"
                         int lightInGridStartID = _FluidParticleGridSorted[sortedStartID].y;
 
                         // First Light Pos
-                        float2 startLightPos = (_ComputeBuffer[lightInGridStartID].position + _ComputeBuffer[lightInGridStartID].velocity * _FluidDeltaTime) * 0.5 + 0.5;
+                        float2 startLightPos = (_ComputeBuffer[lightInGridStartID].position) * 0.5 + 0.5;
                         startLightPos.y = 1 -  startLightPos.y;
                         // startLightPos +=  _ComputeBuffer[lightInGridStartID].velocity * _FluidDeltaTime;
 
@@ -204,7 +204,7 @@ Shader "Draw Grid Density"
                         while(_FluidParticleGridSorted[loopID].x == _FluidParticleGridSorted[loopID - 1].x)
                         {
                             int lightInGridStartIDLoop = _FluidParticleGridSorted[loopID].y;
-                            float2 startLightPosLoop = (_ComputeBuffer[lightInGridStartIDLoop].position + _ComputeBuffer[lightInGridStartIDLoop].velocity * _FluidDeltaTime) * 0.5 + 0.5;
+                            float2 startLightPosLoop = (_ComputeBuffer[lightInGridStartIDLoop].position) * 0.5 + 0.5;
                             startLightPosLoop.y = 1 -  startLightPosLoop.y;
                             // startLightPosLoop +=  _ComputeBuffer[lightInGridStartIDLoop].velocity * _FluidDeltaTime;
                         

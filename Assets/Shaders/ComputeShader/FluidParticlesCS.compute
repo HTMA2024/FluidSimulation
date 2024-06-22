@@ -1,7 +1,11 @@
-#pragma kernel FluidSimulationCS
+#pragma kernel FluidSimulationGraphCS
 #pragma kernel InitCS
 #pragma kernel FluidBuildGridCS
 #pragma kernel SortGridCS;
+
+#pragma kernel FluidSimulationDensityCS
+#pragma kernel FluidSimulationPressureCS
+#pragma kernel FluidSimulationCS
 
 #include "FluidParticle.hlsl"
 
@@ -19,6 +23,8 @@ RWBuffer<int> _FluidParticleGrid;
 RWBuffer<int2> _FluidParticleGridSorted;
 RWBuffer<int2> _FluidParticleGridSortedTemp;
 
+RWTexture2D<float4> _DebugPressureTexture;
+RWTexture2D<float2> _DebugTexture;
 Texture2D<float> _FluidDensity;
 Texture2D<float4> _FluidPressure;
 float4 _TexelSize;
@@ -35,7 +41,7 @@ void FluidBuildGridCS (uint3 id : SV_DispatchThreadID)
 	uint xCount = floor((_TexelSize.x / _TexelSize.y) / _SmoothRadius);
 	uint totalCount = (xCount) * (yCount);
 	
-	float2 particlePos = (_FluidParticlePhysics[idx].position.xy + _FluidParticlePhysics[idx].velocity * _FluidDeltaTime) * 0.5 + 0.5;
+	float2 particlePos = (_FluidParticlePhysics[idx].position.xy + _FluidParticlePhysics[idx].velocity *  _FluidDeltaTime) * 0.5 + 0.5;
 	particlePos.y = 1 -  particlePos.y;
 	int pGridIDX = floor(particlePos.x * xCount);
 	int pGridIDY = floor(particlePos.y * yCount);
@@ -66,7 +72,256 @@ void SortGridCS (uint3 id : SV_DispatchThreadID)
 }
 
 [numthreads(tx,1,1)]
+void FluidSimulationDensityCS (uint3 id : SV_DispatchThreadID)
+{
+	const uint idx = id.x;
+	if(idx >= _FluidParticleCount) return;
+
+	float3 thisParticlePos = (_FluidParticlePhysics[idx].position + _FluidParticlePhysics[idx].velocity *  _FluidDeltaTime)* 0.5 + 0.5;
+	thisParticlePos.y = 1 -  thisParticlePos.y;
+
+	float yCount = floor(1 / _SmoothRadius);
+	float xCount = floor((_TexelSize.x / _TexelSize.y) / _SmoothRadius);
+	uint totalCount = (xCount) * (yCount);
+	int gridID = _FluidParticlePhysics[idx].gridID;
+	int gridIDY = floor((float)gridID/xCount);
+	int gridIDX = gridID - (gridIDY * xCount);
+
+	int debugID = _FluidParticlePhysics[idx].gridID;
+	int debugIDY = gridIDY;
+	int debugIDX = gridIDX;
+	
+	_FluidParticlePhysics[idx].density = 0;
+	
+	for(int j = -1; j <= 1; j++)
+	{
+		for(int k = -1; k <= 1; k++)
+		{
+			int cIDX = gridIDX + j;
+			int cIDY = gridIDY + k;
+			if(cIDX < 0 || cIDX > xCount-1) continue;
+			if(cIDY < 0 || cIDY > yCount-1) continue;
+			
+            int cID = floor(cIDX + cIDY * (xCount));
+            int sortedStartID = _FluidParticleGrid[cID];
+            if(sortedStartID > _FluidParticleCount) continue;
+            int lightInGridStartID = _FluidParticleGridSorted[sortedStartID].y;
+			
+			// First Light Pos
+			float2 startLightPos = (_FluidParticlePhysics[lightInGridStartID].position+ _FluidParticlePhysics[lightInGridStartID].velocity *  _FluidDeltaTime)* 0.5 + 0.5;
+			startLightPos.y = 1 -  startLightPos.y;
+	
+			uint loopID = sortedStartID;
+			float density = CalculateDensity(thisParticlePos,startLightPos,_TexelSize,_SmoothRadius);
+			_FluidParticlePhysics[idx].density += density;
+			loopID += 1;
+			
+			// Debug
+			// for(int xid = debugIDX/xCount *_TexelSize.x; xid < (debugIDX+1)/xCount *_TexelSize.x; xid++)
+			// {
+			// 	for(int yid = debugIDY/yCount *_TexelSize.y; yid < (debugIDY+1)/yCount*_TexelSize.y; yid++)
+			// 	{
+			// 		uint2 uvID = uint2(xid ,yid);
+			// 		if(_DebugTexture[uvID].x != 0) continue;
+			// 		float2 uvPos = float2(uvID.x/_TexelSize.x, uvID.y/_TexelSize.y);
+			// 		float UVdensity = CalculateDensity(uvPos,startLightPos,_TexelSize,_SmoothRadius);
+			// 		_DebugTexture[uvID] += float2(0,UVdensity);
+			// 	}
+			// }
+			
+			while(_FluidParticleGridSorted[loopID].x == _FluidParticleGridSorted[loopID - 1].x)
+			{
+				int lightInGridStartIDLoop = _FluidParticleGridSorted[loopID].y;
+				float2 startLightPosLoop = (_FluidParticlePhysics[lightInGridStartIDLoop].position + _FluidParticlePhysics[lightInGridStartIDLoop].velocity *  _FluidDeltaTime)* 0.5 + 0.5;
+				startLightPosLoop.y = 1 -  startLightPosLoop.y;
+				
+				density = CalculateDensity(thisParticlePos,startLightPosLoop,_TexelSize,_SmoothRadius);
+				_FluidParticlePhysics[idx].density += density;
+				
+				// Debug
+				// for(int xid = debugIDX/xCount *_TexelSize.x; xid < (debugIDX+1)/xCount *_TexelSize.x; xid++)
+				// {
+				// 	for(int yid = debugIDY/yCount *_TexelSize.y; yid < (debugIDY+1)/yCount*_TexelSize.y; yid++)
+				// 	{
+				// 		uint2 uvID = uint2(xid ,yid);
+				// 		if(_DebugTexture[uvID].x != 0) continue;
+				// 		float2 uvPos = float2(uvID.x/_TexelSize.x, uvID.y/_TexelSize.y);
+				// 		float UVdensity = CalculateDensity(uvPos,startLightPosLoop,_TexelSize,_SmoothRadius);
+				// 		_DebugTexture[uvID] += float2(0,UVdensity);
+				// 	}
+				// }
+				
+				loopID += 1;
+			}
+			
+		}
+	}
+	
+	// Debug
+	// for(int xid = debugIDX/xCount *_TexelSize.x; xid < (debugIDX+1)/xCount *_TexelSize.x; xid++)
+	// {
+	// 	for(int yid = debugIDY/yCount *_TexelSize.y; yid < (debugIDY+1)/yCount*_TexelSize.y; yid++)
+	// 	{
+	// 		uint2 uvID = uint2(xid ,yid);
+	// 		_DebugTexture[uvID] += float2(1,0);
+	// 	}
+	// }
+}
+
+float _TargetValue;
+float _PressureMultiplier;
+
+[numthreads(tx,1,1)]
+void FluidSimulationPressureCS (uint3 id : SV_DispatchThreadID)
+{
+	const uint idx = id.x;
+	if(idx >= _FluidParticleCount) return;
+
+	float3 thisParticlePos = (_FluidParticlePhysics[idx].position  + _FluidParticlePhysics[idx].velocity *  _FluidDeltaTime)* 0.5 + 0.5;
+	thisParticlePos.y = 1 -  thisParticlePos.y;
+
+	float yCount = floor(1 / _SmoothRadius);
+	float xCount = floor((_TexelSize.x / _TexelSize.y) / _SmoothRadius);
+	uint totalCount = (xCount) * (yCount);
+	int gridID = _FluidParticlePhysics[idx].gridID;
+	int gridIDY = floor((float)gridID/xCount);
+	int gridIDX = gridID - (gridIDY * xCount);
+
+	int debugID = _FluidParticlePhysics[idx].gridID;
+	int debugIDY = gridIDY;
+	int debugIDX = gridIDX;
+	_FluidParticlePhysics[idx].pressure = 0;
+	
+	for(int j = -1; j <= 1; j++)
+	{
+		for(int k = -1; k <= 1; k++)
+		{
+			int cIDX = gridIDX + j;
+			int cIDY = gridIDY + k;
+			if(cIDX < 0 || cIDX > xCount-1) continue;
+			if(cIDY < 0 || cIDY > yCount-1) continue;
+			
+			int cID = floor(cIDX + cIDY * (xCount));
+			int sortedStartID = _FluidParticleGrid[cID];
+			if(sortedStartID > _FluidParticleCount) continue;
+			int lightInGridStartID = _FluidParticleGridSorted[sortedStartID].y;
+			
+			// First Light Pos
+			float2 startLightPos = (_FluidParticlePhysics[lightInGridStartID].position + _FluidParticlePhysics[lightInGridStartID].velocity *  _FluidDeltaTime)* 0.5 + 0.5;
+			startLightPos.y = 1 -  startLightPos.y;
+			uint loopID = sortedStartID;
+			float3 pressure = 0;
+			
+			if(lightInGridStartID!=idx)
+			{
+				pressure = CalculatePressure(thisParticlePos,startLightPos,_FluidParticlePhysics[idx].density,_FluidParticlePhysics[lightInGridStartID].density,_TexelSize,_SmoothRadius,_TargetValue, _PressureMultiplier,_FluidDeltaTime);
+				_FluidParticlePhysics[idx].pressure += pressure;
+			}
+
+			// Debug
+			// for(int xid = debugIDX/xCount *_TexelSize.x; xid < (debugIDX+1)/xCount *_TexelSize.x; xid++)
+			// {
+			// 	for(int yid = debugIDY/yCount *_TexelSize.y; yid < (debugIDY+1)/yCount*_TexelSize.y; yid++)
+			// 	{
+			// 		uint2 uvID = uint2(xid ,yid);
+			// 		if(_DebugPressureTexture[uvID].b != 0) continue;
+			// 		float2 uvPos = float2(uvID.x/_TexelSize.x, uvID.y/_TexelSize.y);
+			// 		float UVDensity = _DebugTexture[uvID].y/_DebugTexture[uvID].x;
+			// 		float4 UVPressure = CalculatePressure(uvPos,startLightPos,UVDensity,_FluidParticlePhysics[lightInGridStartID].density,_TexelSize,_SmoothRadius,_TargetValue, _PressureMultiplier,_FluidDeltaTime);
+			// 		_DebugPressureTexture[uvID] += float4(UVPressure.xy,0,0);
+			// 		// _DebugPressureTexture[uvID] = UVDensity;
+			// 	}
+			// }
+			
+			
+			loopID += 1;
+			while(_FluidParticleGridSorted[loopID].x == _FluidParticleGridSorted[loopID - 1].x)
+			{
+				int lightInGridStartIDLoop = _FluidParticleGridSorted[loopID].y;
+				float2 startLightPosLoop = (_FluidParticlePhysics[lightInGridStartIDLoop].position + _FluidParticlePhysics[lightInGridStartIDLoop].velocity *  _FluidDeltaTime)* 0.5 + 0.5;
+				startLightPosLoop.y = 1 -  startLightPosLoop.y;
+
+				if(lightInGridStartIDLoop!=idx)
+				{
+					pressure = CalculatePressure(thisParticlePos,startLightPosLoop,_FluidParticlePhysics[idx].density,_FluidParticlePhysics[lightInGridStartIDLoop].density,_TexelSize,_SmoothRadius,_TargetValue, _PressureMultiplier,_FluidDeltaTime);
+					_FluidParticlePhysics[idx].pressure += pressure;
+				}
+
+				
+				// Debug
+				// for(int xid = debugIDX/xCount *_TexelSize.x; xid < (debugIDX+1)/xCount *_TexelSize.x; xid++)
+				// {
+				// 	for(int yid = debugIDY/yCount *_TexelSize.y; yid < (debugIDY+1)/yCount*_TexelSize.y; yid++)
+				// 	{
+				// 		uint2 uvID = uint2(xid ,yid);
+				// 		if(_DebugPressureTexture[uvID].b != 0) continue;
+				// 		float2 uvPos = float2(uvID.x/_TexelSize.x, uvID.y/_TexelSize.y);
+				// 		float UVDensity = _DebugTexture[uvID].y/_DebugTexture[uvID].x;
+				// 		float4 UVPressure = CalculatePressure(uvPos,startLightPosLoop,UVDensity,_FluidParticlePhysics[lightInGridStartIDLoop].density,_TexelSize,_SmoothRadius,_TargetValue, _PressureMultiplier,_FluidDeltaTime);
+				// 		_DebugPressureTexture[uvID] += float4(UVPressure.xy,0,0);
+				// 		// _DebugPressureTexture[uvID] = UVDensity;
+				// 	}
+				// }
+				
+				loopID += 1;
+			}
+		}
+	}
+	// Debug
+	// for(int xid = debugIDX/xCount *_TexelSize.x; xid < (debugIDX+1)/xCount *_TexelSize.x; xid++)
+	// {
+	// 	for(int yid = debugIDY/yCount *_TexelSize.y; yid < (debugIDY+1)/yCount*_TexelSize.y; yid++)
+	// 	{
+	// 		uint2 uvID = uint2(xid ,yid);
+	// 		_DebugPressureTexture[uvID] += float4(0,0,1,0);
+	// 	}
+	// }
+}
+
+[numthreads(tx,1,1)]
 void FluidSimulationCS (uint3 id : SV_DispatchThreadID)
+{
+	const uint idx = id.x;
+	if(idx >= _FluidParticleCount) return;
+	
+	float density = _FluidParticlePhysics[idx].density;
+	float2 pressure = _FluidParticlePhysics[idx].pressure;
+	// float density = _DebugTexture[uvIndex].y/_DebugTexture[uvIndex].x;
+	// float2 pressure = _DebugPressureTexture[uvIndex.xy].xy/_DebugPressureTexture[uvIndex.xy].a;
+	
+	pressure += float2(0, _Gravity);
+	float3 acceleration = 0;
+	acceleration.xy = pressure/ max(density, 1e-5);
+	acceleration.y *= -1;
+	_FluidParticlePhysics[idx].acceleration = acceleration;
+	
+	// Update Position
+	float3 velocity = _FluidParticlePhysics[idx].velocity + acceleration * _FluidDeltaTime;
+	float3 position = _FluidParticlePhysics[idx].position + velocity * _FluidDeltaTime;
+
+	float halfBoundSize = 1.f - 0.02;
+	if(abs(position.x) >= halfBoundSize)
+	{
+		position.x = halfBoundSize * sign(position.x);
+		velocity.x *= -1 * _EnergyDumping;
+	}
+	
+	if(abs(position.y) >= halfBoundSize)
+	{
+		position.y = halfBoundSize * sign(position.y);
+		velocity.y *= -1 * _EnergyDumping;
+	}
+	
+	_FluidParticlePhysics[idx].color = float4(pressure.xy,0,1);
+	_FluidParticlePhysics[idx].position = position;
+	_FluidParticlePhysics[idx].velocity = velocity * _EnergyDumping;
+	_FluidParticlePhysics[idx].density = 0;
+	_FluidParticlePhysics[idx].pressure = 0;
+}
+
+
+[numthreads(tx,1,1)]
+void FluidSimulationGraphCS (uint3 id : SV_DispatchThreadID)
 {
 	const uint idx = id.x;
 	if(idx >= _FluidParticleCount) return;
@@ -114,6 +369,7 @@ void FluidSimulationCS (uint3 id : SV_DispatchThreadID)
 uint _PrevFluidParticleCount;
 uint _CurrFluidParticleCount;
 StructuredBuffer<FluidParticlePhysics> _FluidParticleInit;
+
 [numthreads(tx,1,1)]
 void InitCS (uint3 id : SV_DispatchThreadID)
 {

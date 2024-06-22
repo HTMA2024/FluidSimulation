@@ -64,17 +64,6 @@ Shader "Draw Pressure"
                 return o;
             }
 
-            float2 GetRandomDir(float seed)
-            {
-                float seed0 = seed;
-                float seed1 = seed * 2;
-			    float hash0 = frac( ( sin(dot( seed0 , float2( 12.9898,78.233 ) * 43758.55 ) )) );
-                float hash1 = frac( ( sin(dot( seed1 , float2( 12.9898,78.233 ) * 43758.55 ) )) );
-                float2 dir =float2(hash0 * 2 -1,hash1 * 2 -1);
-                dir = normalize(dir);
-                return dir;
-            }
-
             
             fixed4 frag(v2f i) : SV_Target {
 

@@ -29,7 +29,8 @@ namespace FluidSimulation
         [SerializeField] private bool m_DrawGridPressureField = false;
         [SerializeField] private bool m_DrawVizDensityMap = false;
         [SerializeField] private bool m_DrawParticles = false;
-
+        [SerializeField] private bool m_EnableDebug = false;
+        
         [SerializeField] private RTHandle m_RenderTexture;
         
         [SerializeField] private float m_Radius = 0.1f;
@@ -64,6 +65,7 @@ namespace FluidSimulation
                 FluidDensityFieldRendererFeature.SetVizDensityParams(_overTargetCol, _underTargetCol,_aroundTargetCol, _targetDensity);
                 FluidDensityFieldRendererFeature.SetPressureParams(_targetDensity, _pressureMultiplier);
                 FluidDensityFieldRendererFeature.enableUpdate = m_EnableUpdate;
+                FluidDensityFieldRendererFeature.computeShaderDebug = m_EnableDebug;
                 FluidDensityFieldRendererFeature.drawGridDensityField = m_DrawGridDensityField;
                 FluidDensityFieldRendererFeature.drawGridPressureField = m_DrawGridPressureField;
                 

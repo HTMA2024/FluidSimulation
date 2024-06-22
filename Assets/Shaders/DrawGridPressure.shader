@@ -62,18 +62,6 @@ Shader "Draw Grid Pressure"
 
                 return o;
             }
-            
-            float2 GetRandomDir(float seed)
-            {
-                float seed0 = seed;
-                float seed1 = seed * 2;
-			    float hash0 = frac( ( sin(dot( seed0 , float2( 12.9898,78.233 ) * 43758.55 ) )) );
-                float hash1 = frac( ( sin(dot( seed1 , float2( 12.9898,78.233 ) * 43758.55 ) )) );
-                float2 dir =float2(hash0 * 2 -1,hash1 * 2 -1);
-                dir = normalize(dir);
-                return dir;
-            }
-
             float CalculateDensity(float2 uv, float2 lightPos)
             {
                 float mass = 1;
@@ -141,7 +129,7 @@ Shader "Draw Grid Pressure"
                         int lightInGridStartID = _FluidParticleGridSorted[sortedStartID].y;
 
                         // First Light Pos
-                        float2 startLightPos = (_ComputeBuffer[lightInGridStartID].position + _ComputeBuffer[lightInGridStartID].velocity *_FluidDeltaTime) * 0.5 + 0.5;
+                        float2 startLightPos = (_ComputeBuffer[lightInGridStartID].position) * 0.5 + 0.5;
                         startLightPos.y = 1 -  startLightPos.y;
 
                         uint loopID = sortedStartID;
@@ -152,7 +140,7 @@ Shader "Draw Grid Pressure"
                         while(_FluidParticleGridSorted[loopID].x == _FluidParticleGridSorted[loopID - 1].x)
                         {
                             int lightInGridStartIDLoop = _FluidParticleGridSorted[loopID].y;
-                            float2 startLightPosLoop = (_ComputeBuffer[lightInGridStartIDLoop].position + _ComputeBuffer[lightInGridStartIDLoop].velocity *_FluidDeltaTime)* 0.5 + 0.5;
+                            float2 startLightPosLoop = (_ComputeBuffer[lightInGridStartIDLoop].position)* 0.5 + 0.5;
                             startLightPosLoop.y = 1 -  startLightPosLoop.y;
                         
                             pressure = CalculatePressure(uv, startLightPosLoop);

@@ -18,8 +18,9 @@ struct FluidParticlePhysics
 	float3 velocity;
 	float3 acceleration;
 	float4 color;
+	float density;
+	float3 pressure;
 };
-
 
 float SmoothingKernel(float radius, float dst)
 {
@@ -51,6 +52,52 @@ float hashwithoutsine11(float p)
 	p *= p + 33.33;
 	p *= p + p;
 	return frac(p);
+}
+
+float2 GetRandomDir(float seed)
+{
+	float seed0 = seed;
+	float seed1 = seed * 2;
+	float hash0 = frac( ( sin(dot( seed0 , float2( 12.9898,78.233 ) * 43758.55 ) )) );
+	float hash1 = frac( ( sin(dot( seed1 , float2( 12.9898,78.233 ) * 43758.55 ) )) );
+	float2 dir =float2(hash0 * 2 -1,hash1 * 2 -1);
+	dir = normalize(dir);
+	return dir;
+}
+
+float CalculateDensity(float2 particlePos, float2 otherParticlePos, float2 texelSize, float smoothRadius)
+{
+	float mass = 1;
+	float2 s = particlePos - otherParticlePos;
+	s.y *= 2;
+	s.x *= 2 * texelSize.x/texelSize.y;
+	
+	float2 dir = normalize(s);
+	float dst = abs(distance(s,0));
+	float influence = SmoothingKernel(smoothRadius, dst);
+	float density = mass * influence;
+	return density;
+}
+
+float4 CalculatePressure(float2 particlePos, float2 otherParticlePos,float densitySelf, float densityOthers, float2 texelSize, float smoothRadius, float targetValue, float pressureMultiplier, float seed)
+{
+	float mass = 1;
+	float2 s = particlePos - otherParticlePos;
+	s.y *= 2;
+	s.x *= 2 * texelSize.x/texelSize.y;
+
+	float dis = abs(distance(s,0));
+	float2 dir = dis <= 1e-5 ? GetRandomDir(seed) : s/dis;
+	float slope = SmoothingKernelDerivative(smoothRadius, dis);
+                
+	float2 gradient = -dir * slope * mass / max(densitySelf,1e-5);
+	float pressureSelf = ConvertDensityToPressure(densitySelf, targetValue, pressureMultiplier);
+	float pressureOthers = ConvertDensityToPressure(densityOthers, targetValue, pressureMultiplier);
+	float pressure = (pressureSelf + pressureOthers) / 2;
+	float2 pressureForce = pressure * gradient;
+    float4 res = dis < 1e-4 ? 0.0 : float4(pressureForce,0,1);
+                
+	return res;
 }
 
 #endif // UNITY_CG_INCLUDED

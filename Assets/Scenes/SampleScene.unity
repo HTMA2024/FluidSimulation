@@ -458,8 +458,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Pixel: 350
   m_ParticleRadius: 0.005
-  m_SmoothingRadius: 0.2
+  m_SmoothingRadius: 0.04
   _energyDamping: 0.99
+  _gravity: 1
   _particleColor: {r: 1, g: 1, b: 1, a: 0}
   _underTargetCol: {r: 0.27987415, g: 0.7378853, b: 1, a: 0}
   _overTargetCol: {r: 1, g: 0.36163503, b: 0.36163503, a: 0}
@@ -467,11 +468,13 @@ MonoBehaviour:
   _targetDensity: 10
   _pressureMultiplier: 1
   m_EnableUpdate: 0
-  m_DrawDensityField: 1
+  m_DrawGridDensityField: 0
+  m_DrawGridPressureField: 0
   m_DrawVizDensityMap: 0
-  m_DrawGradientField: 0
-  m_DrawPressureField: 0
   m_DrawParticles: 1
+  m_EnableDebug: 0
+  m_Radius: 0.1
+  m_AddCount: 500
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

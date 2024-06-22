@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace FluidSimulation
@@ -23,6 +24,8 @@ namespace FluidSimulation
         public Vector3 velocity;
         public Vector3 acceleration;
         public Vector4 color;
+        public float density;
+        public float3 pressure;
     }
 
     public struct FluidParticleGraphics
