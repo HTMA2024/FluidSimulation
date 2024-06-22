@@ -12,7 +12,6 @@ namespace FluidSimulation
     public class FluidSimulator : MonoBehaviour
     {
         [SerializeField] private int m_Pixel = 190;
-        [SerializeField][Range(0,40)] private int m_Selector = 0;
         [SerializeField][Range(1e-3f,1)] private float m_ParticleRadius = 0.5f;
         [SerializeField][Range(1e-3f,1)] private float m_SmoothingRadius = 0.5f;
 
@@ -26,12 +25,9 @@ namespace FluidSimulation
         [SerializeField][Range(1e-3f,10)] private float _pressureMultiplier = 1f;
         
         [SerializeField] private bool m_EnableUpdate = false;
-        [SerializeField] private bool m_DrawDensityField = false;
         [SerializeField] private bool m_DrawGridDensityField = false;
         [SerializeField] private bool m_DrawGridPressureField = false;
         [SerializeField] private bool m_DrawVizDensityMap = false;
-        [SerializeField] private bool m_DrawGradientField = false;
-        [SerializeField] private bool m_DrawPressureField = false;
         [SerializeField] private bool m_DrawParticles = false;
 
         [SerializeField] private RTHandle m_RenderTexture;
@@ -53,7 +49,7 @@ namespace FluidSimulation
         {
             if (Input.GetMouseButton(0))
             {
-                FluidDensityFieldRendererFeature.DensityFieldPass.SetCursorPosition(Input.mousePosition/ new float3(m_Camera.pixelWidth,m_Camera.pixelHeight,1), m_Selector);
+                FluidDensityFieldRendererFeature.DensityFieldPass.SetCursorPosition(Input.mousePosition/ new float3(m_Camera.pixelWidth,m_Camera.pixelHeight,1));
                 AddParticlesAroundCursor(Input.mousePosition / new float3(m_Camera.pixelWidth, m_Camera.pixelHeight, 1), m_Radius, m_AddCount);
             }
         }
@@ -68,13 +64,10 @@ namespace FluidSimulation
                 FluidDensityFieldRendererFeature.SetVizDensityParams(_overTargetCol, _underTargetCol,_aroundTargetCol, _targetDensity);
                 FluidDensityFieldRendererFeature.SetPressureParams(_targetDensity, _pressureMultiplier);
                 FluidDensityFieldRendererFeature.enableUpdate = m_EnableUpdate;
-                FluidDensityFieldRendererFeature.drawBlendDensityField = m_DrawDensityField;
                 FluidDensityFieldRendererFeature.drawGridDensityField = m_DrawGridDensityField;
                 FluidDensityFieldRendererFeature.drawGridPressureField = m_DrawGridPressureField;
                 
                 FluidDensityFieldRendererFeature.drawVizDensityMap = m_DrawVizDensityMap;
-                FluidDensityFieldRendererFeature.drawGradientField = m_DrawGradientField;
-                FluidDensityFieldRendererFeature.drawPressureField = m_DrawPressureField;
                 FluidDensityFieldRendererFeature.drawParticles = m_DrawParticles;
             }
         }

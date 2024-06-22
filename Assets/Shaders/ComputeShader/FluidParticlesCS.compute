@@ -73,6 +73,8 @@ void FluidSimulationCS (uint3 id : SV_DispatchThreadID)
 	
 	// Update Acceleration
 	float2 uv = (_FluidParticlePhysics[idx].position.xy + _FluidParticlePhysics[idx].velocity * _FluidDeltaTime) * 0.5f + 0.5f;
+	uv.x = clamp(0,1,uv.x);
+	uv.y = clamp(0,1,uv.y);
 	uv.y = 1 - uv.y;
 	uv.x *= _TexelSize.x;
 	uv.y *= _TexelSize.y;
@@ -90,14 +92,14 @@ void FluidSimulationCS (uint3 id : SV_DispatchThreadID)
 	float3 velocity = _FluidParticlePhysics[idx].velocity + acceleration * _FluidDeltaTime;
 	float3 position = _FluidParticlePhysics[idx].position + velocity * _FluidDeltaTime;
 
-	float halfBoundSize = 1.f - 0.05;
-	if(abs(position.x) > halfBoundSize)
+	float halfBoundSize = 1.f - 0.02;
+	if(abs(position.x) >= halfBoundSize)
 	{
 		position.x = halfBoundSize * sign(position.x);
 		velocity.x *= -1 * _EnergyDumping;
 	}
 	
-	if(abs(position.y) > halfBoundSize)
+	if(abs(position.y) >= halfBoundSize)
 	{
 		position.y = halfBoundSize * sign(position.y);
 		velocity.y *= -1 * _EnergyDumping;
