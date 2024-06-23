@@ -95,7 +95,7 @@ float4 CalculatePressure(float2 particlePos, float2 otherParticlePos,float densi
 	float pressureOthers = ConvertDensityToPressure(densityOthers, targetValue, pressureMultiplier);
 	float pressure = (pressureSelf + pressureOthers) / 2;
 	float2 pressureForce = pressure * gradient;
-    float4 res = dis < 1e-4 ? 0.0 : float4(pressureForce,0,1);
+    float4 res = float4(pressureForce,0,1);
                 
 	return res;
 }

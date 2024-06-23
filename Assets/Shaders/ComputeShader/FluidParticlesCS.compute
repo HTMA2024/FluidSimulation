@@ -294,27 +294,40 @@ void FluidSimulationCS (uint3 id : SV_DispatchThreadID)
 	acceleration.xy = pressure/ max(density, 1e-5);
 	acceleration.y *= -1;
 	_FluidParticlePhysics[idx].acceleration = acceleration;
+
+	float3 predictPos = _FluidParticlePhysics[idx].position + _FluidParticlePhysics[idx].velocity * _FluidDeltaTime;
+	float halfBoundSize = 1.f - 0.02; 
+	if(abs(predictPos.x) >= halfBoundSize)
+	{
+		_FluidParticlePhysics[idx].position.x = halfBoundSize * sign(_FluidParticlePhysics[idx].position.x);
+		_FluidParticlePhysics[idx].velocity.x *= -1 * _EnergyDumping;
+	}
+	
+	if(abs(predictPos.y) >= halfBoundSize)
+	{
+		_FluidParticlePhysics[idx].position.y = halfBoundSize * sign(_FluidParticlePhysics[idx].position.y);
+		_FluidParticlePhysics[idx].velocity.y *= -1 * _EnergyDumping;
+	}
 	
 	// Update Position
 	float3 velocity = _FluidParticlePhysics[idx].velocity + acceleration * _FluidDeltaTime;
 	float3 position = _FluidParticlePhysics[idx].position + velocity * _FluidDeltaTime;
 
-	float halfBoundSize = 1.f - 0.02;
-	if(abs(position.x) >= halfBoundSize)
-	{
-		position.x = halfBoundSize * sign(position.x);
-		velocity.x *= -1 * _EnergyDumping;
-	}
-	
-	if(abs(position.y) >= halfBoundSize)
-	{
-		position.y = halfBoundSize * sign(position.y);
-		velocity.y *= -1 * _EnergyDumping;
-	}
+	// if(abs(position.x) >= halfBoundSize)
+	// {
+	// 	position.x = halfBoundSize * sign(position.x);
+	// 	velocity.x *= -1 * _EnergyDumping;
+	// }
+	//
+	// if(abs(position.y) >= halfBoundSize)
+	// {
+	// 	position.y = halfBoundSize * sign(position.y);
+	// 	velocity.y *= -1 * _EnergyDumping;
+	// }
 	
 	_FluidParticlePhysics[idx].color = float4(pressure.xy,0,1);
 	_FluidParticlePhysics[idx].position = position;
-	_FluidParticlePhysics[idx].velocity = velocity * _EnergyDumping;
+	_FluidParticlePhysics[idx].velocity = velocity * _EnergyDumping;;
 	_FluidParticlePhysics[idx].density = 0;
 	_FluidParticlePhysics[idx].pressure = 0;
 }

@@ -131,6 +131,7 @@ namespace FluidSimulation
             private int2[] _particleGridIndex;
             private int[] _gidIndex;
 
+            private float m_PrevTime = 0;
             private float m_DeltaTime = 0;
             
             public DensityFieldPass(ComputeShader fluidPhysicsCs, ComputeShader bitonicSortCS,Shader drawParticlesShader, Shader drawGridDensityShader, Shader vizDensityShader, Shader drawGridPressureShader)
@@ -330,7 +331,8 @@ namespace FluidSimulation
                 }
                 if (enableUpdate)
                 {
-                    m_DeltaTime = Time.deltaTime;
+                    m_DeltaTime = 0.005f;
+                    m_PrevTime = Time.time;
                 }
                 cmd.SetGlobalFloat("_FluidDeltaTime", m_DeltaTime);
                 cmd.SetGlobalFloat("_SmoothRadius", _dRadius);
@@ -358,6 +360,7 @@ namespace FluidSimulation
                 cmd.SetGlobalInt("_FluidParticleCount", FluidParticleCount);
                 
                 // Sort
+                cmd.BeginSample("Fluid Sort");
                 UpdateGridBuffer(cmd, textureSize, _dRadius);
                 cmd.SetComputeBufferParam(_fluidPhysicsCS,_sortGridKernel,"_FluidParticleGrid" , _fluidParticleGridBuffer);
                 
@@ -373,43 +376,52 @@ namespace FluidSimulation
                 _gridDensityMaterial.SetBuffer("_FluidParticleGridSorted", _fluidParticleGridSortedBuffer);
                 _gridPressureMaterial.SetBuffer("_FluidParticleGrid", _fluidParticleGridBuffer);
                 _gridPressureMaterial.SetBuffer("_FluidParticleGridSorted", _fluidParticleGridSortedBuffer);
+                cmd.EndSample("Fluid Sort");
                 
                 
                 // Draw Grid Density
-                CreateRenderTexture("RTDensity", RenderTextureFormat.RFloat, ref _textureDescriptor, in renderingData, ref m_RTHandleDensity);
-                cmd.SetRenderTarget(m_RTHandleDensity,RenderBufferLoadAction.DontCare,RenderBufferStoreAction.DontCare);
-                cmd.ClearRenderTarget(true, true, Color.black);
-                cmd.Blit(null, m_RTHandleDensity, _gridDensityMaterial,0);
-                cmd.SetGlobalTexture("_FluidDensity", m_RTHandleDensity);
                 if (drawGridDensityField)
                 {
+                    cmd.BeginSample("Fluid Grid Density");
+                    CreateRenderTexture("RTDensity", RenderTextureFormat.RFloat, ref _textureDescriptor, in renderingData, ref m_RTHandleDensity);
+                    cmd.SetRenderTarget(m_RTHandleDensity,RenderBufferLoadAction.DontCare,RenderBufferStoreAction.DontCare);
+                    cmd.ClearRenderTarget(true, true, Color.black);
+                    cmd.Blit(null, m_RTHandleDensity, _gridDensityMaterial,0);
+                    cmd.SetGlobalTexture("_FluidDensity", m_RTHandleDensity);
                     Blitter.BlitCameraTexture(cmd, m_RTHandleDensity, m_CameraColorTarget, 0);
+                    cmd.EndSample("Fluid Grid Density");
                 }
                 
 
                 // Viz Density
                 if (drawVizDensityMap)
                 {
+                    cmd.BeginSample("Fluid Grid VizMap");
                     CreateRenderTexture("VizDensityRT", RenderTextureFormat.ARGBFloat,ref _textureDescriptor, in renderingData, ref m_RTHandleVizDensity);
                     cmd.SetRenderTarget(m_RTHandleVizDensity,RenderBufferLoadAction.DontCare,RenderBufferStoreAction.DontCare);
                     cmd.ClearRenderTarget(true, true, Color.black);
                     cmd.Blit(m_RTHandleDensity, m_RTHandleVizDensity, _vizDensityMaterial,0);
                     Blitter.BlitCameraTexture(cmd, m_RTHandleVizDensity, m_CameraColorTarget, 0);
+                    cmd.EndSample("Fluid Grid VizMap");
                 }
                 
                 
                 // Draw Pressure Field
-                CreateRenderTexture("RTPressure",RenderTextureFormat.ARGBFloat,ref _textureDescriptor, in renderingData, ref m_RTHandlePressure);
-                cmd.SetRenderTarget(m_RTHandlePressure, RenderBufferLoadAction.DontCare,RenderBufferStoreAction.DontCare );
-                cmd.ClearRenderTarget(true, true, Color.black);
-                cmd.Blit(null, m_RTHandlePressure, _gridPressureMaterial, 0);
                 if (drawGridPressureField)
                 {
+                    cmd.BeginSample("Fluid Grid Pressure");
+                    CreateRenderTexture("RTPressure",RenderTextureFormat.ARGBFloat,ref _textureDescriptor, in renderingData, ref m_RTHandlePressure);
+                    cmd.SetRenderTarget(m_RTHandlePressure, RenderBufferLoadAction.DontCare,RenderBufferStoreAction.DontCare );
+                    cmd.ClearRenderTarget(true, true, Color.black);
+                    cmd.Blit(null, m_RTHandlePressure, _gridPressureMaterial, 0);
                     Blitter.BlitCameraTexture(cmd, m_RTHandlePressure, m_CameraColorTarget, 0);
+                    cmd.EndSample("Fluid Grid Pressure");
                 }
                 
-                CreateRenderTexture("RTDebug", RenderTextureFormat.RGFloat, ref _textureDescriptor, in renderingData, ref m_DebugRTHandle);
-                CreateRenderTexture("RTDebugPressure", RenderTextureFormat.ARGBFloat, ref _textureDescriptor, in renderingData, ref m_DebugPressureRTHandle);
+                cmd.BeginSample("Fluid Grid Main");
+                // Grid Compute Shader Density & Pressure
+                // CreateRenderTexture("RTDebug", RenderTextureFormat.RGFloat, ref _textureDescriptor, in renderingData, ref m_DebugRTHandle);
+                // CreateRenderTexture("RTDebugPressure", RenderTextureFormat.ARGBFloat, ref _textureDescriptor, in renderingData, ref m_DebugPressureRTHandle);
                     
                 cmd.SetComputeFloatParam(_fluidPhysicsCS,"_EnergyDumping", _energyDamping);
                 cmd.SetComputeFloatParam(_fluidPhysicsCS,"_ParticleSize", _pRadius);
@@ -423,34 +435,40 @@ namespace FluidSimulation
                 cmd.SetComputeBufferParam(_fluidPhysicsCS,_pressureKernel,"_FluidParticleGrid",_fluidParticleGridBuffer);
                 cmd.SetComputeBufferParam(_fluidPhysicsCS,_pressureKernel,"_FluidParticleGridSorted",_fluidParticleGridSortedBuffer);
                 
-                cmd.SetRenderTarget(m_DebugRTHandle,RenderBufferLoadAction.DontCare,RenderBufferStoreAction.DontCare);
-                cmd.ClearRenderTarget(true, true, Color.black);
-                cmd.SetComputeTextureParam(_fluidPhysicsCS, _densityKernel, "_DebugTexture",m_DebugRTHandle);
-                cmd.SetComputeBufferParam(_fluidPhysicsCS,_pressureKernel,"_FluidParticlePhysics",_particlesPhysicsBuffer);
+                // cmd.SetRenderTarget(m_DebugRTHandle,RenderBufferLoadAction.DontCare,RenderBufferStoreAction.DontCare);
+                // cmd.ClearRenderTarget(true, true, Color.black);
+                // cmd.SetComputeTextureParam(_fluidPhysicsCS, _densityKernel, "_DebugTexture",m_DebugRTHandle);
+                // cmd.SetComputeBufferParam(_fluidPhysicsCS,_pressureKernel,"_FluidParticlePhysics",_particlesPhysicsBuffer);
+                cmd.BeginSample("Fluid Grid Density");
                 cmd.DispatchCompute(_fluidPhysicsCS,_densityKernel, Mathf.CeilToInt(FluidParticleCount / 64.0f),1,1 );
+                cmd.EndSample("Fluid Grid Density");
                 
                 
-                cmd.SetRenderTarget(m_DebugPressureRTHandle,RenderBufferLoadAction.DontCare,RenderBufferStoreAction.DontCare);
-                cmd.ClearRenderTarget(true, true, Color.black);
-                cmd.SetComputeTextureParam(_fluidPhysicsCS, _pressureKernel, "_DebugTexture",m_DebugRTHandle);
-                cmd.SetComputeTextureParam(_fluidPhysicsCS, _pressureKernel, "_DebugPressureTexture",m_DebugPressureRTHandle);
-                cmd.SetComputeBufferParam(_fluidPhysicsCS,_pressureKernel,"_FluidParticlePhysics",_particlesPhysicsBuffer);
+                // cmd.SetRenderTarget(m_DebugPressureRTHandle,RenderBufferLoadAction.DontCare,RenderBufferStoreAction.DontCare);
+                // cmd.ClearRenderTarget(true, true, Color.black);
+                // cmd.SetComputeTextureParam(_fluidPhysicsCS, _pressureKernel, "_DebugTexture",m_DebugRTHandle);
+                // cmd.SetComputeTextureParam(_fluidPhysicsCS, _pressureKernel, "_DebugPressureTexture",m_DebugPressureRTHandle);
+                // cmd.SetComputeBufferParam(_fluidPhysicsCS,_pressureKernel,"_FluidParticlePhysics",_particlesPhysicsBuffer);
+                cmd.BeginSample("Fluid Grid Pressure");
                 cmd.DispatchCompute(_fluidPhysicsCS,_pressureKernel, Mathf.CeilToInt(FluidParticleCount / 64.0f),1,1 );
-                
+                cmd.EndSample("Fluid Grid Pressure");
                 // Compute Physics
                 if (enableUpdate)
                 {
-                    cmd.SetComputeTextureParam(_fluidPhysicsCS, _updateKernel, "_DebugTexture",m_DebugRTHandle);
-                    cmd.SetComputeTextureParam(_fluidPhysicsCS, _updateKernel, "_DebugPressureTexture",m_DebugPressureRTHandle);
-                    cmd.SetComputeTextureParam(_fluidPhysicsCS, _updateKernel, "_FluidDensity", m_RTHandleDensity);
-                    cmd.SetComputeTextureParam(_fluidPhysicsCS, _updateKernel, "_FluidPressure", m_RTHandlePressure);
+                    // cmd.SetComputeTextureParam(_fluidPhysicsCS, _updateKernel, "_DebugTexture",m_DebugRTHandle);
+                    // cmd.SetComputeTextureParam(_fluidPhysicsCS, _updateKernel, "_DebugPressureTexture",m_DebugPressureRTHandle);
+                    // cmd.SetComputeTextureParam(_fluidPhysicsCS, _updateKernel, "_FluidDensity", m_RTHandleDensity);
+                    // cmd.SetComputeTextureParam(_fluidPhysicsCS, _updateKernel, "_FluidPressure", m_RTHandlePressure);
+                    cmd.BeginSample("Fluid Grid Update");
                     cmd.SetComputeBufferParam(_fluidPhysicsCS,_updateKernel,"_FluidParticlePhysics",_particlesPhysicsBuffer);
                     cmd.DispatchCompute(_fluidPhysicsCS,_updateKernel, Mathf.CeilToInt(FluidParticleCount / 64.0f),1,1 );
-                    
+                    cmd.EndSample("Fluid Grid Update");
                     // cmd.SetComputeTextureParam(_fluidPhysicsCS, _mainKernel, "_FluidDensity", m_RTHandleDensity);
                     // cmd.SetComputeTextureParam(_fluidPhysicsCS, _mainKernel, "_FluidPressure", m_RTHandlePressure);
                     // cmd.DispatchCompute(_fluidPhysicsCS,_mainKernel, Mathf.CeilToInt(FluidParticleCount / 64.0f),1,1 );
                 }
+                
+                cmd.EndSample("Fluid Grid Main");
 
                 if (computeShaderDebug)
                 {
