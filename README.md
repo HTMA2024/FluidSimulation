@@ -2,7 +2,7 @@
 
 基于 **Smoothed Particle Hydrodynamics (SPH)** 方法的实时 2D 流体模拟，运行在 Unity URP 渲染管线上，核心物理计算完全由 GPU Compute Shader 驱动。
 
-![Overview](images/overview.gif)
+![Overview](Images/overview.gif)
 
 ---
 
@@ -18,11 +18,11 @@
 
 ### 密度场可视化
 
-![Density Field](images/density_field.gif)
+![Density Field](Images/density_field.gif)
 
 ### 压力场可视化
 
-![Pressure Field](images/pressure_field.png)
+![Pressure Field](Images/pressure_field.gif)
 
 ## 技术架构
 
