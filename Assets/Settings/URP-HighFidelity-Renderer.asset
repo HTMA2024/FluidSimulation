@@ -16,12 +16,9 @@ MonoBehaviour:
   fluidPhysicsCS: {fileID: 7200000, guid: 3ee609e653ae2a44ab767f8ddce950b2, type: 3}
   bitonicSortCS: {fileID: 7200000, guid: 73734f2ba736eae479a16d26984a7168, type: 3}
   drawParticlesShader: {fileID: 4800000, guid: c19c15976cbc9384c98f94bdae6f3a32, type: 3}
-  drawDensityShader: {fileID: 4800000, guid: 4c38c55807af36e4581cd8049b6cecaf, type: 3}
   drawGridDensityShader: {fileID: 4800000, guid: 05425a8266f5bef4a8d994b3457c9264,
     type: 3}
   vizDensityShader: {fileID: 4800000, guid: ffa210c1bb026754ba7a48642ff77fd4, type: 3}
-  drawGradientShader: {fileID: 4800000, guid: 16a1d21b556c716428c3a5911699e86c, type: 3}
-  drawPressureShader: {fileID: 4800000, guid: da91cb161182328448b5ed2e1cc06dad, type: 3}
   drawGridPressureShader: {fileID: 4800000, guid: 682646e141d3d344491d82e3efa75f54,
     type: 3}
 --- !u!114 &-1878332245247344467
@@ -77,8 +74,8 @@ MonoBehaviour:
     hdrDebugViewPS: {fileID: 4800000, guid: 573620ae32aec764abd4d728906d2587, type: 3}
   m_RendererFeatures:
   - {fileID: -1878332245247344467}
-  - {fileID: -8344031103465796023}
-  m_RendererFeatureMap: adc0de57c6d2eee5494e1c83eb0b348c
+  - {fileID: 5089934088770934367}
+  m_RendererFeatureMap: adc0de57c6d2eee55fd6570b1614a346
   m_UseNativeRenderPass: 0
   postProcessData: {fileID: 0}
   xrSystemData: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}
@@ -101,6 +98,12 @@ MonoBehaviour:
       type: 3}
     dataDrivenLensFlare: {fileID: 4800000, guid: 6cda457ac28612740adb23da5d39ea92,
       type: 3}
+    terrainDetailLitPS: {fileID: 4800000, guid: f6783ab646d374f94b199774402a5144,
+      type: 3}
+    terrainDetailGrassPS: {fileID: 4800000, guid: e507fdfead5ca47e8b9a768b51c291a1,
+      type: 3}
+    terrainDetailGrassBillboardPS: {fileID: 4800000, guid: 29868e73b638e48ca99a19ea58c48d90,
+      type: 3}
   m_AssetVersion: 2
   m_OpaqueLayerMask:
     serializedVersion: 2
@@ -121,3 +124,24 @@ MonoBehaviour:
   m_CopyDepthMode: 0
   m_AccurateGbufferNormals: 0
   m_IntermediateTextureMode: 1
+--- !u!114 &5089934088770934367
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6859c3c64ae30494fad1790e2f023c0d, type: 3}
+  m_Name: FluidRenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  fluidPhysicsCS: {fileID: 7200000, guid: 3ee609e653ae2a44ab767f8ddce950b2, type: 3}
+  bitonicSortCS: {fileID: 7200000, guid: 73734f2ba736eae479a16d26984a7168, type: 3}
+  drawParticlesShader: {fileID: 4800000, guid: c19c15976cbc9384c98f94bdae6f3a32, type: 3}
+  drawGridDensityShader: {fileID: 4800000, guid: 05425a8266f5bef4a8d994b3457c9264,
+    type: 3}
+  vizDensityShader: {fileID: 4800000, guid: ffa210c1bb026754ba7a48642ff77fd4, type: 3}
+  drawGridPressureShader: {fileID: 4800000, guid: 682646e141d3d344491d82e3efa75f54,
+    type: 3}

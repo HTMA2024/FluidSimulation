@@ -101,7 +101,6 @@ Shader "Draw Grid Density"
                             float2 startLightPos = _ComputeBuffer[lightInGridStartID].position * 0.5 + 0.5;
                             startLightPos.y = 1 -  startLightPos.y;
 
-                            // Draw Circle On Found Light
                             uint loopID = sortedStartID;
                             
                             float2 pUV = uv - startLightPos.xy;
@@ -125,14 +124,6 @@ Shader "Draw Grid Density"
                                 loopID += 1;
                             }
                             
-                            // Validate
-                            // int pGridIDX = floor(startLightPos.x * xCount);
-                            // int pGridIDY = floor(startLightPos.y * yCount);
-                            // int pID = floor(pGridIDX + pGridIDY * (xCount + 1));
-                            // if(pID == cID)
-                            // {
-                            //     vizColor += float4(0,1,0,0);  // Viz Light list 
-                            // }
                         }
                     }
                 }
@@ -172,7 +163,7 @@ Shader "Draw Grid Density"
                 grid.y = 1 - smoothstep(0.01,0.05,sin(grid.y*UNITY_PI));
                 grid.x = 1 - smoothstep(0.01,0.05,sin(grid.x*UNITY_PI)) ;
                 float gridStroke = saturate(grid.x + grid.y);
-                // vizColor.g += gridStroke; // Debug
+                // vizColor.g += gridStroke;
                 int validGridCount = 0;
                 for(int j = -1; j <= 1; j++)
                 {
@@ -191,10 +182,8 @@ Shader "Draw Grid Density"
                         if(sortedStartID > _FluidParticleCount) continue;
                         int lightInGridStartID = _FluidParticleGridSorted[sortedStartID].y;
 
-                        // First Light Pos
                         float2 startLightPos = (_ComputeBuffer[lightInGridStartID].position) * 0.5 + 0.5;
                         startLightPos.y = 1 -  startLightPos.y;
-                        // startLightPos +=  _ComputeBuffer[lightInGridStartID].velocity * _FluidDeltaTime;
 
                         uint loopID = sortedStartID;
                         float density = CalculateDensity(uv, startLightPos);
@@ -206,7 +195,6 @@ Shader "Draw Grid Density"
                             int lightInGridStartIDLoop = _FluidParticleGridSorted[loopID].y;
                             float2 startLightPosLoop = (_ComputeBuffer[lightInGridStartIDLoop].position) * 0.5 + 0.5;
                             startLightPosLoop.y = 1 -  startLightPosLoop.y;
-                            // startLightPosLoop +=  _ComputeBuffer[lightInGridStartIDLoop].velocity * _FluidDeltaTime;
                         
                             density = CalculateDensity(uv, startLightPosLoop);
                             vizColor.r += density;
@@ -215,29 +203,13 @@ Shader "Draw Grid Density"
                             
                     }
                 }
-                // vizColor.r /= validGridCount;
                 return vizColor;
             }
 
             
             float4 frag(v2f i) : SV_Target
             {
-                // int pID = -1;
-                // for(int j = 0; j < _FluidParticleCount; j++)
-                // {
-                //     if(_ComputeBuffer[j].gridID == id)
-                //     {
-                //         return  1;
-                //     }
-                // }
-
-	            // float2 cursorPos = _CursorPosition.xy;
-                // float4 vizColor = VizSearchLight(i.uv, cursorPos);
-
                 float4 density = CalculateDensitySearch(i.uv);
-
-                // float output = pID == id ? 1 : gridStroke;
-                // return idListDisplay;
                 return density;
             }
  

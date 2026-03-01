@@ -88,8 +88,8 @@ Shader "Draw Grid Pressure"
                 fixed slope = SmoothingKernelDerivative(_SmoothRadius, dis);
                 uint2 uvIndex = floor(float2(uv.x * _TexelSize.x, uv.y * _TexelSize.y));
                 uint2 uvLightIndex = floor(float2(lightPos.x * _TexelSize.x, lightPos.y * _TexelSize.y));
-                float densitySelf = _FluidDensity[uvIndex]; // Need to be changed
-                float densityOthers = _FluidDensity[uvLightIndex]; // Need to be changed
+                float densitySelf = _FluidDensity[uvIndex];
+                float densityOthers = _FluidDensity[uvLightIndex];
                 
                 float2 gradient = -dir * slope * mass / max(densitySelf,1e-5);
                 float pressureSelf = ConvertDensityToPressure(densitySelf, _TargetValue, _PressureMultiplier);
@@ -155,25 +155,11 @@ Shader "Draw Grid Pressure"
             
             float4 frag(v2f i) : SV_Target
             {
-                // int pID = -1;
-                // for(int j = 0; j < _FluidParticleCount; j++)
-                // {
-                //     if(_ComputeBuffer[j].gridID == id)
-                //     {
-                //         return  1;
-                //     }
-                // }
-
-	            // float2 cursorPos = _CursorPosition.xy;
-                // float4 vizColor = VizSearchLight(i.uv, cursorPos);
-
                 float4 pressure = CalculatePressureSearch(i.uv);
 
                 uint2 uvIndex = floor(float2(i.uv.x * _TexelSize.x, i.uv.y * _TexelSize.y));
-                float densitySelf = _FluidDensity[uvIndex]; // Need to be changed
+                float densitySelf = _FluidDensity[uvIndex];
 
-                // float output = pID == id ? 1 : gridStroke;
-                // return idListDisplay;
                 return pressure;
             }
  

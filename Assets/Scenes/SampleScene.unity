@@ -38,7 +38,6 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.18028378, g: 0.22571412, b: 0.30692285, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -300,9 +299,8 @@ GameObject:
   m_Component:
   - component: {fileID: 1996152459}
   - component: {fileID: 1996152458}
-  - component: {fileID: 1996152457}
   - component: {fileID: 1996152456}
-  - component: {fileID: 1996152460}
+  - component: {fileID: 1996152461}
   m_Layer: 0
   m_Name: Pixel Perfect Camera
   m_TagString: Untagged
@@ -354,30 +352,6 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
---- !u!114 &1996152457
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1996152455}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c88f5cead0c0b2a4eb05b5900433f8d1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_ComponentVersion: 1
-  m_AssetsPPU: 100
-  m_RefResolutionX: 320
-  m_RefResolutionY: 180
-  m_CropFrame: 0
-  m_GridSnapping: 1
-  m_FilterMode: 0
-  m_UpscaleRT: 0
-  m_PixelSnapping: 0
-  m_CropFrameX: 0
-  m_CropFrameY: 0
-  m_StretchFill: 0
 --- !u!20 &1996152458
 Camera:
   m_ObjectHideFlags: 0
@@ -444,7 +418,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1996152460
+--- !u!114 &1996152461
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -453,21 +427,21 @@ MonoBehaviour:
   m_GameObject: {fileID: 1996152455}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 049dbc9e5c3c6024b91a90da6ae0b844, type: 3}
+  m_Script: {fileID: 11500000, guid: f4129efbfb9e3e8488528a5f4eec5c89, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Pixel: 350
-  m_ParticleRadius: 0.005
-  m_SmoothingRadius: 0.04
-  _energyDamping: 0.99
-  _gravity: 1
-  _particleColor: {r: 1, g: 1, b: 1, a: 0}
-  _underTargetCol: {r: 0.27987415, g: 0.7378853, b: 1, a: 0}
-  _overTargetCol: {r: 1, g: 0.36163503, b: 0.36163503, a: 0}
-  _aroundTargetCol: {r: 1, g: 1, b: 1, a: 0}
-  _targetDensity: 10
-  _pressureMultiplier: 1
-  m_EnableUpdate: 0
+  m_Pixel: 190
+  m_ParticleRadius: 0.01
+  m_SmoothingRadius: 0.03
+  m_EnergyDamping: 0.995
+  m_Gravity: 0
+  m_TargetDensity: 1000
+  m_PressureMultiplier: 1
+  m_ParticleColor: {r: 0, g: 0.9474337, b: 1, a: 0.60784316}
+  m_UnderTargetCol: {r: 1, g: 1, b: 1, a: 0.5529412}
+  m_OverTargetCol: {r: 1, g: 0.09146752, b: 0, a: 0.60784316}
+  m_AroundTargetCol: {r: 1, g: 0.6752565, b: 0.17924517, a: 0.6156863}
+  m_EnableUpdate: 1
   m_DrawGridDensityField: 0
   m_DrawGridPressureField: 0
   m_DrawVizDensityMap: 0
