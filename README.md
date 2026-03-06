@@ -4,7 +4,7 @@
 
 A real-time 2D fluid simulation based on Smoothed Particle Hydrodynamics (SPH), running on Unity URP with core physics computation fully driven by GPU Compute Shaders.
 
-![overview](assets/github-repo-images/FluidSimulation/overview.gif)
+![overview](Images/overview.gif)
 
 ## Features
 
@@ -18,11 +18,11 @@ A real-time 2D fluid simulation based on Smoothed Particle Hydrodynamics (SPH), 
 
 ### Density Field Visualization
 
-![density](assets/github-repo-images/FluidSimulation/density_field.gif)
+![density](Images/density_field.gif)
 
 ### Pressure Field Visualization
 
-![pressure](assets/github-repo-images/FluidSimulation/pressure_field.gif)
+![pressure](Images/pressure_field.gif)
 
 ## Technical Architecture
 
